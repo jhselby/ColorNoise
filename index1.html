@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Color Noise</title>
+
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b0f18">
+
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(120,120,255,.22), transparent 60%),
+                  radial-gradient(1000px 700px at 80% 90%, rgba(0,255,200,.12), transparent 60%),
+                  linear-gradient(135deg, #0b0f18, #070a10);
+      color: #e8eefc;
+    }
+    .card {
+      width: min(1100px, 94vw);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.45);
+      backdrop-filter: blur(12px);
+    }
+    h1 { margin: 0 0 6px; font-size: 40px; letter-spacing: -0.02em; }
+    .sub { margin: 0 0 16px; color: rgba(232,238,252,0.78); font-size: 16px; line-height: 1.35; }
+    .pill {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      font-size: 13px; color: rgba(232,238,252,0.78);
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .tile {
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.18);
+      padding: 14px;
+    }
+    .tileTop { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .name { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .colorDot {
+      width: 16px; height: 16px; border-radius: 50%;
+      display: inline-block; flex-shrink: 0;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .desc { margin-top: 8px; font-size: 14px; color: rgba(232,238,252,0.78); line-height:1.35; }
+    .btn {
+      cursor: pointer;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: #e8eefc;
+      font-weight: 750;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .btn:hover { background: rgba(255,255,255,0.12); }
+    .btn.active { outline: 2px solid rgba(120,180,255,0.9); background: rgba(120,180,255,0.2); }
+    audio { width: 100%; margin-top: 14px; }
+
+    .panel {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.18);
+    }
+    .panelTop {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .timerDisplay {
+      font-size: 32px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+    .timerDisplay.off { opacity: 0.4; }
+    .timerGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .timerBox {
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: auto 44px auto 44px;
+      align-items: center;
+      gap: 10px;
+    }
+    .label { color: rgba(232,238,252,0.75); font-size: 15px; }
+    .num { font-size: 22px; font-weight: 850; text-align: center; min-width: 30px; }
+    .square {
+      width: 44px; height: 44px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      font-size: 24px; font-weight: 900;
+      display: grid; place-items: center;
+      cursor: pointer; user-select: none;
+    }
+    .square:active { background: rgba(255,255,255,0.25); }
+    .statusLine { margin-top: 12px; color: rgba(232,238,252,0.78); font-size: 14px; line-height: 1.4; }
+    .sectionTitle { margin-top: 18px; font-weight: 900; opacity: 0.9; letter-spacing: 0.02em; }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>Color Noise <span class="pill">Above Average Joe • v1.3</span></h1>
+    <div class="sub">
+      Tap a tile to play. Designed to keep playing on iOS during screen lock.
+      <br>All sounds auto-loop. Long MP3 sources = no obvious seams.
+    </div>
+
+    <div class="sectionTitle">Core colors</div>
+    <div class="grid" id="coreGrid"></div>
+
+    <div class="sectionTitle">Nature + Noise blends</div>
+    <div class="grid" id="extraGrid"></div>
+
+    <audio id="player" controls playsinline preload="auto" loop></audio>
+
+    <div class="panel">
+      <div class="panelTop">
+        <div>
+          <div class="label">Sleep Timer</div>
+          <div class="timerDisplay off" id="timerDisplay">0:00:00</div>
+        </div>
+        <button class="btn" id="toggleTimer">Start Timer</button>
+      </div>
+
+      <div class="timerGrid">
+        <div class="timerBox">
+          <div class="label">Hours</div>
+          <div class="square" id="hMinus">−</div>
+          <div class="num" id="hours">0</div>
+          <div class="square" id="hPlus">+</div>
+        </div>
+
+        <div class="timerBox">
+          <div class="label">Minutes</div>
+          <div class="square" id="mMinus">−</div>
+          <div class="num" id="mins">0</div>
+          <div class="square" id="mPlus">+</div>
+        </div>
+      </div>
+
+      <div class="statusLine" id="status">
+        Set hours/minutes above, then tap Start. Timer continues even when screen is locked.
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const COLORS = {
+    white: "#ffffff",
+    pink: "#ff69b4",
+    brown: "#8b4513",
+    blue: "#4a90d9",
+    green: "#2ecc71",
+    red: "#cd5c5c"
+  };
+
+  // All URLs verified working as of creation
+  const SOURCES_CORE = [
+    {
+      key: "white",
+      name: "White",
+      color: COLORS.white,
+      desc: "Best for masking sudden noises. Broad spectrum 'hiss'. Great for sleep + focus. 1 hour.",
+      url: "https://archive.org/download/24-hours-lectrofan-sound-and-white-noise-river-128/1%20hour%20lectrofan%20sound%20and%20white%20noise%20river%20128.mp3"
+    },
+    {
+      key: "pink",
+      name: "Pink",
+      color: COLORS.pink,
+      desc: "Smoother than white, less 'crispy'. Feels like rainfall. Popular for sleep. 10 min loop.",
+      url: "https://archive.org/download/TenMinutesOfWhiteNoisePinkNoiseAndBrownianNoise/Pink%20noise.mp3"
+    },
+    {
+      key: "brown",
+      name: "Brown",
+      color: COLORS.brown,
+      desc: "Deep, bass-heavy rumble. Calming for stress relief and sleep. 1 hour.",
+      url: "https://archive.org/download/1-hour-brown-noise-and-flowing-water-320/1%20hour%20Brown%20Noise%20and%20Flowing%20River%20flac.mp3"
+    },
+    {
+      key: "blue",
+      name: "Blue",
+      color: COLORS.blue,
+      desc: "Higher-frequency weighted. Useful for masking higher-pitched distractions. 1 hour.",
+      url: "https://archive.org/download/1-hour-texas-river-rapids-and-deep-blue-noise-320/1%20hour%20texas%20river%20rapids%20and%20deep%20blue%20noise%20320.mp3"
+    },
+    {
+      key: "green",
+      name: "Green",
+      color: COLORS.green,
+      desc: "Nature-like, mid-spectrum (~500Hz). Great for calm focus or sleep. 4 hours.",
+      url: "https://archive.org/download/green-noise/Ambient%20Green%20Noise%20Audio.mp3"
+    },
+    {
+      key: "red",
+      name: "Red (Deep Brown)",
+      color: COLORS.red,
+      desc: "Even deeper than brown, very bass-heavy. Extremely relaxing. 1 hour.",
+      url: "https://archive.org/download/red-noise_202207/red%20noise.mp3"
+    }
+  ];
+
+  const SOURCES_EXTRA = [
+    {
+      key: "blue_waterfall",
+      name: "Blue + Waterfall",
+      color: COLORS.blue,
+      desc: "Blue noise with waterfall ambience. Less sterile than pure noise. 1 hour.",
+      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20sleep%20blue%20noise%20rem%20asmr%20320.mp3"
+    },
+    {
+      key: "red_waterfall",
+      name: "Red + Waterfall",
+      color: COLORS.red,
+      desc: "Deep red/brown with waterfall. Very relaxing. 1 hour.",
+      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20rem%20red%20noise%20sleep%20320.mp3"
+    },
+    {
+      key: "brown_river",
+      name: "Brown + River",
+      color: COLORS.brown,
+      desc: "Brown noise blended with peaceful flowing river. 1 hour.",
+      url: "https://archive.org/download/24-hours-peaceful-river-and-brown-noise-vbr/1%20hour%20v3%20river%20and%20brown%20noise%20vbr.mp3"
+    },
+    {
+      key: "brown_rain",
+      name: "Brown + Rain",
+      color: COLORS.brown,
+      desc: "Brown noise with rain sounds. Great for sleep. 1 hour.",
+      url: "https://archive.org/download/red-noise_202207/1-rain%20and%20brown%20noise%20-%20320%20-%201%20hour.mp3"
+    },
+    {
+      key: "brown_stream",
+      name: "Brown + Mountain Stream",
+      color: COLORS.brown,
+      desc: "Brown noise with mountain stream and rain shower. 1 hour.",
+      url: "https://archive.org/download/1-hour-mountain-stream-doubled-and-brown-noise-flac/1%20hour%20mountain%20stream%20-%20rain%20shower%20-%20brown%20noise%20v2%20320.mp3"
+    },
+    {
+      key: "white_roaring",
+      name: "White + Roaring Waterfall",
+      color: COLORS.white,
+      desc: "White noise with powerful roaring waterfall. 10 hours.",
+      url: "https://archive.org/download/1-fan-4-1-hour-flac/Roaring%20Waterfall%20White%20Noise%2010%20hours.mp3"
+    },
+    {
+      key: "brown_terraced",
+      name: "Brown + Terraced Waterfall",
+      color: COLORS.brown,
+      desc: "Brown noise with terraced waterfall sound. 10 hours.",
+      url: "https://archive.org/download/1-fan-4-1-hour-flac/10%20hours%20terraced%20waterfall%20brown%20noise%20sound%20128.mp3"
+    },
+    {
+      key: "turquoise_stream",
+      name: "Turquoise Stream",
+      color: "#40E0D0",
+      desc: "Calming turquoise mountain stream. Natural water sounds. 10 hours.",
+      url: "https://archive.org/download/10-hours-alpha-river-and-brown-noise-flac/Calming%20Turquoise%20Water%2C%20Mountain%20Stream.%20Natural%20Water%2C%20Sleep%20Sounds.%2010%20Hours.%20White%20Noise%20Sleep..mp3"
+    }
+  ];
+
+  const player = document.getElementById("player");
+  const coreGrid = document.getElementById("coreGrid");
+  const extraGrid = document.getElementById("extraGrid");
+  const status = document.getElementById("status");
+  const timerDisplay = document.getElementById("timerDisplay");
+
+  let currentKey = null;
+
+  function setActive(key) {
+    document.querySelectorAll(".btn.play").forEach(b => {
+      b.classList.toggle("active", b.dataset.key === key);
+      b.textContent = b.dataset.key === key ? "Playing" : "Play";
+    });
+  }
+
+  function makeTile(item) {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+
+    const top = document.createElement("div");
+    top.className = "tileTop";
+
+    const name = document.createElement("div");
+    name.className = "name";
+    
+    const dot = document.createElement("span");
+    dot.className = "colorDot";
+    dot.style.backgroundColor = item.color;
+    dot.style.color = item.color;
+    
+    const nameText = document.createElement("span");
+    nameText.textContent = item.name;
+    
+    name.appendChild(dot);
+    name.appendChild(nameText);
+
+    const btn = document.createElement("div");
+    btn.className = "btn play";
+    btn.textContent = "Play";
+    btn.dataset.key = item.key;
+
+    btn.addEventListener("click", async () => {
+      try {
+        // If clicking the same one, stop it
+        if (currentKey === item.key && !player.paused) {
+          player.pause();
+          currentKey = null;
+          setActive(null);
+          status.textContent = "Stopped.";
+          return;
+        }
+
+        currentKey = item.key;
+        setActive(currentKey);
+        status.textContent = "Loading...";
+
+        player.pause();
+        player.src = item.url;
+        player.load();
+
+        await player.play();
+        status.textContent = "Playing: " + item.name + " (loops automatically)";
+      } catch (e) {
+        status.textContent = "Play failed: " + (e?.message || "Unknown error");
+      }
+    });
+
+    top.appendChild(name);
+    top.appendChild(btn);
+
+    const desc = document.createElement("div");
+    desc.className = "desc";
+    desc.textContent = item.desc;
+
+    tile.appendChild(top);
+    tile.appendChild(desc);
+    return tile;
+  }
+
+  SOURCES_CORE.forEach(s => coreGrid.appendChild(makeTile(s)));
+  SOURCES_EXTRA.forEach(s => extraGrid.appendChild(makeTile(s)));
+
+  // Sleep timer
+  const hoursEl = document.getElementById("hours");
+  const minsEl = document.getElementById("mins");
+  const toggleTimerBtn = document.getElementById("toggleTimer");
+
+  let setHours = 0;
+  let setMins = 0;
+  let endTime = null;
+  let timerInterval = null;
+
+  function formatTime(ms) {
+    if (ms <= 0) return "0:00:00";
+    const totalSec = Math.ceil(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  function updateTimerDisplay() {
+    if (!endTime) {
+      timerDisplay.textContent = "0:00:00";
+      timerDisplay.classList.add("off");
+      return;
+    }
+    const remaining = endTime - Date.now();
+    if (remaining <= 0) {
+      stopTimer(true);
+      return;
+    }
+    timerDisplay.textContent = formatTime(remaining);
+    timerDisplay.classList.remove("off");
+  }
+
+  function startTimer() {
+    const totalMs = (setHours * 3600 + setMins * 60) * 1000;
+    if (totalMs <= 0) {
+      status.textContent = "Set a time first (hours or minutes).";
+      return;
+    }
+
+    endTime = Date.now() + totalMs;
+    toggleTimerBtn.textContent = "Stop Timer";
+    timerDisplay.classList.remove("off");
+    
+    updateTimerDisplay();
+    timerInterval = setInterval(updateTimerDisplay, 1000);
+    
+    status.textContent = "Timer started. Audio will stop when timer reaches 0:00:00.";
+  }
+
+  function stopTimer(finished = false) {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    
+    if (finished) {
+      player.pause();
+      currentKey = null;
+      setActive(null);
+      status.textContent = "Timer finished — audio stopped.";
+    } else {
+      status.textContent = "Timer cancelled.";
+    }
+    
+    endTime = null;
+    toggleTimerBtn.textContent = "Start Timer";
+    timerDisplay.textContent = "0:00:00";
+    timerDisplay.classList.add("off");
+  }
+
+  toggleTimerBtn.addEventListener("click", () => {
+    if (endTime) {
+      stopTimer(false);
+    } else {
+      startTimer();
+    }
+  });
+
+  document.getElementById("hMinus").onclick = () => { 
+    setHours = Math.max(0, setHours - 1); 
+    hoursEl.textContent = setHours; 
+  };
+  document.getElementById("hPlus").onclick = () => { 
+    setHours = Math.min(12, setHours + 1); 
+    hoursEl.textContent = setHours; 
+  };
+  document.getElementById("mMinus").onclick = () => { 
+    setMins = setMins - 15;
+    if (setMins < 0) setMins = 45;
+    minsEl.textContent = setMins; 
+  };
+  document.getElementById("mPlus").onclick = () => { 
+    setMins = setMins + 15;
+    if (setMins > 45) setMins = 0;
+    minsEl.textContent = setMins; 
+  };
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Color Noise</title>
+
+  <!-- Optional: if you put apple-touch-icon.png in the repo root -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#0b0f18">
+
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(120,120,255,.22), transparent 60%),
+                  radial-gradient(1000px 700px at 80% 90%, rgba(0,255,200,.12), transparent 60%),
+                  linear-gradient(135deg, #0b0f18, #070a10);
+      color: #e8eefc;
+    }
+    .card {
+      width: min(1100px, 94vw);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.45);
+      backdrop-filter: blur(12px);
+    }
+    h1 { margin: 0 0 6px; font-size: 40px; letter-spacing: -0.02em; }
+    .sub { margin: 0 0 16px; color: rgba(232,238,252,0.78); font-size: 16px; line-height: 1.35; }
+    .pill {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      font-size: 13px; color: rgba(232,238,252,0.78);
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .tile {
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.18);
+      padding: 14px;
+    }
+    .tileTop { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .name { font-size: 18px; font-weight: 800; }
+    .desc { margin-top: 8px; font-size: 14px; color: rgba(232,238,252,0.78); line-height:1.35; }
+    .btn {
+      cursor: pointer;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: #e8eefc;
+      font-weight: 750;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .btn:hover { background: rgba(255,255,255,0.12); }
+    .btn.active { outline: 2px solid rgba(120,180,255,0.9); }
+    audio { width: 100%; margin-top: 14px; }
+
+    .panel {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.18);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+    .timerGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .timerBox {
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: auto 40px auto 40px;
+      align-items: center;
+      gap: 10px;
+    }
+    .label { color: rgba(232,238,252,0.75); font-size: 16px; }
+    .num { font-size: 20px; font-weight: 850; text-align: center; }
+    .square {
+      width: 40px; height: 40px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      font-size: 22px; font-weight: 900;
+      display: grid; place-items: center;
+      cursor: pointer; user-select: none;
+    }
+    .statusLine { margin-top: 10px; color: rgba(232,238,252,0.78); font-size: 14px; line-height: 1.35; }
+    .small { margin-top: 8px; color: rgba(232,238,252,0.65); font-size: 13px; }
+    .sectionTitle { margin-top: 18px; font-weight: 900; opacity: 0.9; letter-spacing: 0.02em; }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>Color Noise <span class="pill">Above Average Joe • v1.1</span></h1>
+    <div class="sub">
+      Tap a tile to play. Designed to keep playing on iOS during screen lock (after one user tap).
+      <br>Goal: no obvious “2-minute seam” — these are long MP3 sources.
+    </div>
+
+    <div class="sectionTitle">Core colors</div>
+    <div class="grid" id="coreGrid"></div>
+
+    <div class="sectionTitle">Extra streams (more variety)</div>
+    <div class="grid" id="extraGrid"></div>
+
+    <audio id="player" controls playsinline preload="auto"></audio>
+
+    <div class="panel">
+      <div>
+        <div class="label">Sleep timer</div>
+        <div class="num" id="timerLabel">Off</div>
+
+        <div class="timerGrid">
+          <div class="timerBox">
+            <div class="label">Hours</div>
+            <div class="square" id="hMinus">−</div>
+            <div class="num" id="hours">0</div>
+            <div class="square" id="hPlus">+</div>
+          </div>
+
+          <div class="timerBox">
+            <div class="label">Minutes (15m)</div>
+            <div class="square" id="mMinus">−</div>
+            <div class="num" id="mins">0</div>
+            <div class="square" id="mPlus">+</div>
+          </div>
+        </div>
+
+        <div class="statusLine" id="status">
+          Tip: iPhone requires one tap to start audio. After it starts, lock the screen and it should continue.
+        </div>
+        <div class="small" id="debug"></div>
+      </div>
+
+      <button class="btn" id="toggleTimer">Start timer</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // Helper: build Internet Archive direct file URLs
+  // pattern: https://archive.org/download/<identifier>/<filename>
+  // We’re using filenames shown in the Archive item listings/snippets.
+  const SOURCES_CORE = [
+    {
+      key: "white",
+      name: "White",
+      desc: "Best for masking sudden noises (fan/static vibe). Broad spectrum, ‘even’ hiss. Great for sleep + focus.",
+      url: "https://archive.org/download/24-hours-lectrofan-sound-and-white-noise-river-128/1%20hour%20lectrofan%20sound%20and%20white%20noise%20river%20128.mp3"
+    },
+    {
+      key: "pink",
+      name: "Pink",
+      desc: "Smoother and less ‘crispy’ than white. Often feels like rainfall. Popular for sleep and relaxation.",
+      url: "https://archive.org/download/1-hour-pink-noise-quieter-version-2-128/1%20hour%20pink%20noise%20%28quieter%20version%202%29%20128.mp3"
+    },
+    {
+      key: "brown",
+      name: "Brown (Red)",
+      desc: "Deeper, bass-heavy ‘rumble’. Many people find it calming for stress relief, deep focus, and sleep.",
+      url: "https://archive.org/download/onlymp-3.to-1-hour-brown-noise-for-focus-sleep-and-comfort-no-music-hjmn-ifd-6-lcg-192k-1707397200/onlymp3.to%20-%201%20Hour%20BROWN%20NOISE%20for%20FOCUS%20SLEEP%20AND%20COMFORT%20no%20music%20-HJMnIfd6Lcg-192k-1707397200.mp3"
+    },
+
+    // These two “colors” are harder to find as pure long MP3s that are truly free + direct.
+    // So: we include good-enough “functional” versions for now, and you can swap URLs later.
+    {
+      key: "blue",
+      name: "Blue",
+      desc: "Brighter / higher-frequency-weighted noise. Useful for masking higher-pitched distractions; less common for sleep.",
+      url: "https://archive.org/download/1-hour-texas-river-rapids-and-deep-blue-noise-320/1%20hour%20texas%20river%20rapids%20and%20deep%20blue%20noise%20320.mp3"
+    },
+    {
+      key: "grey",
+      name: "Grey",
+      desc: "Shaped to sound ‘even’ to human ears (perceptually flatter). Often used for comfort or sound masking.",
+      // NOTE: this is short in many free sources; replace later if you find a solid 1h direct grey MP3.
+      url: "https://archive.org/download/grey-noise_202210/grey%20noise.mp3"
+    },
+    {
+      key: "violet",
+      name: "Violet (Purple)",
+      desc: "Very bright, high-frequency emphasis (‘steam hiss’ vibe). Sometimes used for tinnitus masking; rarely for sleep.",
+      // Public-domain short clip source:
+      url: "https://archive.org/download/colorsofnoise/violet.flac"
+    },
+    {
+      key: "green",
+      name: "Green",
+      desc: "Often described as nature-like, balanced mid-spectrum. Many people like it for calm focus or sleep.",
+      // Placeholder: use a nature+noise “green-ish” vibe until we find a true 1h green noise MP3
+      url: "https://archive.org/download/1-hour-v-2-calming-mountain-stream-320/Calming%20Mountain%20Stream%20and%20Blue%20Noise%20ASMR%201%20hour.mp3"
+    }
+  ];
+
+  const SOURCES_EXTRA = [
+    {
+      key: "blue_waterfall",
+      name: "Blue + Waterfall (1h)",
+      desc: "Blue noise blended with waterfall ambience. Good masking, less sterile than pure noise.",
+      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20sleep%20blue%20noise%20rem%20asmr%20320.mp3"
+    },
+    {
+      key: "red_waterfall",
+      name: "Red noise + Waterfall (1h)",
+      desc: "Deeper ‘red/brown’ feel with waterfall ambience. Very relaxing for many people.",
+      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20rem%20red%20noise%20sleep%20320.mp3"
+    },
+    {
+      key: "blue_mountain",
+      name: "Mountain Stream + Blue (1h)",
+      desc: "Another ‘blue + nature’ blend (different recording). Variety option.",
+      url: "https://archive.org/download/1-hour-v-2-calming-mountain-stream-320/1%20hour%20Calming%20Mountain%20Stream%20and%20Blue%20Noise%20ASMR%20128.mp3"
+    }
+  ];
+
+  const player = document.getElementById("player");
+  const coreGrid = document.getElementById("coreGrid");
+  const extraGrid = document.getElementById("extraGrid");
+  const status = document.getElementById("status");
+  const debug = document.getElementById("debug");
+
+  let currentKey = null;
+
+  function setActive(key) {
+    document.querySelectorAll(".btn.play").forEach(b => b.classList.toggle("active", b.dataset.key === key));
+  }
+
+  function makeTile(item) {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+
+    const top = document.createElement("div");
+    top.className = "tileTop";
+
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = item.name;
+
+    const btn = document.createElement("div");
+    btn.className = "btn play";
+    btn.textContent = "Play";
+    btn.dataset.key = item.key;
+
+    btn.addEventListener("click", async () => {
+      try {
+        currentKey = item.key;
+        setActive(currentKey);
+
+        player.pause();
+        player.removeAttribute("src");
+        player.load();
+
+        player.src = item.url;
+        player.preload = "auto";
+
+        await new Promise(r => setTimeout(r, 50));
+        await player.play();
+
+        status.textContent = `Playing: ${item.name}`;
+      } catch (e) {
+        status.textContent = `Play failed: ${e?.name || "Error"} ${e?.message ? ("— " + e.message) : ""}`;
+      }
+    });
+
+    top.appendChild(name);
+    top.appendChild(btn);
+
+    const desc = document.createElement("div");
+    desc.className = "desc";
+    desc.textContent = item.desc;
+
+    tile.appendChild(top);
+    tile.appendChild(desc);
+    return tile;
+  }
+
+  SOURCES_CORE.forEach(s => coreGrid.appendChild(makeTile(s)));
+  SOURCES_EXTRA.forEach(s => extraGrid.appendChild(makeTile(s)));
+
+  // Sleep timer
+  const hoursEl = document.getElementById("hours");
+  const minsEl = document.getElementById("mins");
+  const timerLabel = document.getElementById("timerLabel");
+  const toggleTimerBtn = document.getElementById("toggleTimer");
+
+  let hours = 0;
+  let mins = 0; // 0,15,30,45
+  let timerId = null;
+  let endAt = null;
+  let tickId = null;
+
+  function clamp() {
+    hours = Math.max(0, Math.min(23, hours));
+    mins = Math.max(0, Math.min(45, mins));
+  }
+  function render() {
+    hoursEl.textContent = String(hours);
+    minsEl.textContent = String(mins);
+    if (!endAt) timerLabel.textContent = "Off";
+  }
+  function totalMs() { return (hours * 60 + mins) * 60 * 1000; }
+
+  function stopTimer() {
+    if (timerId) clearTimeout(timerId);
+    if (tickId) clearInterval(tickId);
+    timerId = null; tickId = null; endAt = null;
+    toggleTimerBtn.textContent = "Start timer";
+    timerLabel.textContent = "Off";
+    debug.textContent = "";
+  }
+
+  function startTimer() {
+    const ms = totalMs();
+    if (ms <= 0) return;
+
+    endAt = Date.now() + ms;
+    toggleTimerBtn.textContent = "Stop timer";
+
+    timerId = setTimeout(() => {
+      player.pause();
+      status.textContent = "Timer finished: playback stopped.";
+      stopTimer();
+    }, ms);
+
+    tickId = setInterval(() => {
+      const left = Math.max(0, endAt - Date.now());
+      const totalM = Math.ceil(left / 60000);
+      const h = Math.floor(totalM / 60);
+      const m = totalM % 60;
+      timerLabel.textContent = `${h}h ${m}m`;
+      debug.textContent = `Time remaining: ${h}h ${m}m`;
+      if (left <= 0) stopTimer();
+    }, 1000);
+  }
+
+  toggleTimerBtn.addEventListener("click", () => {
+    if (timerId) stopTimer();
+    else startTimer();
+  });
+
+  document.getElementById("hMinus").onclick = () => { hours--; clamp(); render(); };
+  document.getElementById("hPlus").onclick  = () => { hours++; clamp(); render(); };
+  document.getElementById("mMinus").onclick = () => { mins -= 15; clamp(); render(); };
+  document.getElementById("mPlus").onclick  = () => { mins += 15; clamp(); render(); };
+
+  render();
+})();
+</script>
+</body>
+</html>
