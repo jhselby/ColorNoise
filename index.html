@@ -241,7 +241,7 @@
     <div class="headerTop">
       <div class="logo">
         <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise</a>
-        <span class="version">v1.5.1</span>
+        <span class="version">v1.5.2</span>
       </div>
       <div class="byline">by AboveAverageJoe</div>
     </div>
@@ -490,7 +490,7 @@
     
     if (item.url) {
       playBtn.textContent = currentKey === item.key ? "Playing" : "Play";
-      playBtn.onclick = async () => {
+      playBtn.onclick = () => {
         if (!item.url) return;
         
         if (currentKey === item.key && !player.paused) {
@@ -505,14 +505,17 @@
         setActive(currentKey);
         nowPlayingTrack.textContent = "Loading...";
 
-        try {
-          player.pause();
-          player.src = item.url;
-          player.load();
-          await player.play();
-          nowPlayingTrack.textContent = item.name;
-        } catch (e) {
-          nowPlayingTrack.textContent = "Error: " + (e?.message || "Unknown");
+        player.src = item.url;
+        player.load();
+        
+        const playPromise = player.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            nowPlayingTrack.textContent = item.name;
+          }).catch(e => {
+            // On iOS, user may need to tap play on audio controls
+            nowPlayingTrack.textContent = item.name + " (tap ▶)";
+          });
         }
       };
     } else {
