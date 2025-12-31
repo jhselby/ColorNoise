@@ -1,0 +1,18 @@
+{
+  "name": "Color Noise Generator",
+  "short_name": "Color Noise",
+  "description": "Ambient noise generator for focus and sleep",
+  "start_url": "/color-noise.html",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
