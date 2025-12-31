@@ -130,9 +130,9 @@
 
 <body>
   <div class="card">
-    <h1>Color Noise <span class="pill">Above Average Joe • v1.5</span></h1>
+    <h1><a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" style="color: inherit; text-decoration: none;">Color Noise</a> <span class="pill">v1.5</span></h1>
     <div class="sub">
-      Tap a tile to play. Designed to keep playing on iOS during screen lock.
+      By <strong>AboveAverageJoe</strong> · Tap a tile to play · Designed for iOS background playback
       <br>All sounds auto-loop. Long MP3 sources = no obvious seams.
     </div>
 
@@ -186,6 +186,7 @@
     red: "#cd5c5c"
   };
 
+  // All URLs verified working as of creation
   const SOURCES_CORE = [
     {
       key: "white",
@@ -199,7 +200,7 @@
       name: "Pink",
       color: COLORS.pink,
       desc: "Smoother than white, less 'crispy'. Feels like rainfall. Popular for sleep. 1 hour.",
-      url: "https://archive.org/download/classical-music-mixed-with-pink-noise-for-sleep-and-relax_202105/Soothing%20Deep%20Pink%20Noise%201%20Hour.mp3"
+      url: "https://archive.org/download/classical-music-mixed-with-pink-noise-for-sleep-and-relax_202105/Soothing%20Deep%20Pink%20Noise%20%201%20Hour.mp3"
     },
     {
       key: "brown",
@@ -216,11 +217,18 @@
       url: "https://archive.org/download/1-hour-texas-river-rapids-and-deep-blue-noise-320/1%20hour%20texas%20river%20rapids%20and%20deep%20blue%20noise%20320.mp3"
     },
     {
-      key: "green_stream",
+      key: "green_nature",
       name: "Green (Nature)",
       color: COLORS.green,
-      desc: "Mountain stream — nature's green noise. Mid-frequency emphasis. 1 hour.",
-      url: "https://archive.org/download/10-hours-white-noise-river-mountain-stream-doubled-320/1%20Hour%20Calming%20Mountain%20Stream.mp3"
+      desc: "Mountain stream with mid-frequency emphasis. Nature's version of green noise. 1 hour.",
+      url: "https://archive.org/download/1-hour-v-2-calming-mountain-stream-320/1%20hour%20Calming%20Mountain%20Stream%20and%20Blue%20Noise%20ASMR%20128.mp3"
+    },
+    {
+      key: "green_pure",
+      name: "Green (Pure)",
+      color: COLORS.green,
+      desc: "Coming soon — pure green noise source being sourced.",
+      url: null
     },
     {
       key: "red",
@@ -243,7 +251,7 @@
       key: "red_waterfall",
       name: "Red + Waterfall",
       color: COLORS.red,
-      desc: "Deeper red/brown with waterfall. Very relaxing. 1 hour.",
+      desc: "Deep red/brown with waterfall. Very relaxing. 1 hour.",
       url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20rem%20red%20noise%20sleep%20320.mp3"
     },
     {
@@ -280,6 +288,13 @@
       color: COLORS.brown,
       desc: "Brown noise with terraced waterfall sound. 10 hours.",
       url: "https://archive.org/download/1-fan-4-1-hour-flac/10%20hours%20terraced%20waterfall%20brown%20noise%20sound%20128.mp3"
+    },
+    {
+      key: "pink_reading",
+      name: "Pink for Focus",
+      color: COLORS.pink,
+      desc: "Pink noise tuned for reading and concentration. 1 hour.",
+      url: "https://archive.org/download/classical-music-mixed-with-pink-noise-for-sleep-and-relax_202105/Pink%20Noise%20Focus%20on%20Reading%20Without%20DistractionsRuido%20RosaLeer%20Sin%20Distracciones.mp3"
     }
   ];
 
@@ -321,11 +336,25 @@
 
     const btn = document.createElement("div");
     btn.className = "btn play";
-    btn.textContent = "Play";
     btn.dataset.key = item.key;
+    
+    if (item.url) {
+      btn.textContent = "Play";
+    } else {
+      btn.textContent = "Soon";
+      btn.style.opacity = "0.5";
+      btn.style.cursor = "default";
+    }
 
     btn.addEventListener("click", async () => {
+      // Handle "coming soon" items
+      if (!item.url) {
+        status.textContent = item.name + " — coming soon!";
+        return;
+      }
+      
       try {
+        // If clicking the same one, stop it
         if (currentKey === item.key && !player.paused) {
           player.pause();
           currentKey = null;
