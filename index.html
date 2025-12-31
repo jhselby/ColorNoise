@@ -17,251 +17,176 @@
 
   <style>
     :root { color-scheme: dark; }
-    * { box-sizing: border-box; }
     body {
-      margin: 0; 
-      min-height: 100vh;
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background: radial-gradient(1200px 800px at 20% 10%, rgba(120,120,255,.22), transparent 60%),
                   radial-gradient(1000px 700px at 80% 90%, rgba(0,255,200,.12), transparent 60%),
                   linear-gradient(135deg, #0b0f18, #070a10);
-      background-attachment: fixed;
       color: #e8eefc;
     }
-    
-    /* Fixed header with player and timer */
-    .fixedHeader {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(11, 15, 24, 0.95);
+    .card {
+      width: min(1100px, 94vw);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.45);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding: 12px 16px;
     }
-    
-    .headerTop {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
+    h1 { margin: 0 0 6px; font-size: 32px; letter-spacing: -0.02em; }
+    h1 a { color: inherit; text-decoration: none; }
+    .pill {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      font-size: 13px; color: rgba(232,238,252,0.78);
+      margin-left: 10px;
+      vertical-align: middle;
     }
-    
-    .logo {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-    .logo a { color: inherit; text-decoration: none; }
-    .version {
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 6px;
-      background: rgba(255,255,255,0.1);
-      color: rgba(232,238,252,0.7);
-      margin-left: 6px;
-    }
-    .byline {
-      font-size: 11px;
-      color: rgba(232,238,252,0.6);
-    }
-    
-    /* Compact player */
-    .playerRow {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .nowPlaying {
-      font-size: 14px;
-      color: rgba(232,238,252,0.9);
-      font-weight: 600;
-    }
-    audio {
-      width: 100%;
-      height: 40px;
-    }
-    
-    /* Compact timer */
-    .timerRow {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(255,255,255,0.08);
-    }
-    .timerLabel {
-      font-size: 11px;
-      color: rgba(232,238,252,0.6);
-    }
-    .timerDisplay {
-      font-size: 16px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      min-width: 60px;
-    }
-    .timerDisplay.off { opacity: 0.4; }
-    .timerControls {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .timerBtn {
-      width: 28px; height: 28px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      font-size: 14px;
-      font-weight: 700;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      user-select: none;
-    }
-    .timerBtn:active { background: rgba(255,255,255,0.2); }
-    .timerNum {
-      font-size: 14px;
-      font-weight: 700;
-      min-width: 20px;
-      text-align: center;
-    }
-    .timerStartBtn {
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.1);
-      color: #e8eefc;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-left: auto;
-    }
-    .timerStartBtn:active { background: rgba(255,255,255,0.2); }
-    
-    /* Scrollable content */
-    .content {
-      padding: 16px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    
-    .sectionTitle {
-      font-size: 13px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: rgba(232,238,252,0.6);
-      margin: 16px 0 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .sectionTitle:first-child { margin-top: 0; }
-    .collapseBtn {
-      font-size: 12px;
-      cursor: pointer;
-      opacity: 0.6;
-    }
+    .sub { margin: 0 0 16px; color: rgba(232,238,252,0.78); font-size: 14px; line-height: 1.35; }
     
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
     }
-    
     .tile {
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(0,0,0,0.25);
-      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.18);
+      padding: 14px;
     }
-    .tileTop {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .tileTop { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .name { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; flex: 1; }
     .colorDot {
-      width: 12px; height: 12px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      box-shadow: 0 0 6px currentColor;
+      width: 16px; height: 16px; border-radius: 50%;
+      display: inline-block; flex-shrink: 0;
+      box-shadow: 0 0 8px currentColor;
     }
-    .name {
-      font-size: 15px;
-      font-weight: 700;
-      flex: 1;
+    .desc { margin-top: 8px; font-size: 14px; color: rgba(232,238,252,0.78); line-height:1.35; }
+    .btn {
+      cursor: pointer;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: #e8eefc;
+      font-weight: 750;
+      user-select: none;
+      white-space: nowrap;
     }
+    .btn:hover { background: rgba(255,255,255,0.12); }
+    .btn.active { outline: 2px solid rgba(120,180,255,0.9); background: rgba(120,180,255,0.2); }
+    
     .favBtn {
-      font-size: 16px;
+      font-size: 20px;
       cursor: pointer;
       opacity: 0.4;
       transition: opacity 0.2s;
+      padding: 0 4px;
     }
     .favBtn:hover, .favBtn.active { opacity: 1; }
-    .playBtn {
-      padding: 6px 10px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.08);
-      color: #e8eefc;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .playBtn:hover { background: rgba(255,255,255,0.12); }
-    .playBtn.active {
-      background: rgba(120,180,255,0.25);
-      border-color: rgba(120,180,255,0.5);
-    }
-    .desc {
-      font-size: 12px;
-      color: rgba(232,238,252,0.6);
-      margin-top: 6px;
-      line-height: 1.4;
-    }
     
+    audio { width: 100%; margin-top: 14px; }
+
+    .panel {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.18);
+    }
+    .panelTop {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .timerDisplay {
+      font-size: 32px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+    .timerDisplay.off { opacity: 0.4; }
+    .timerGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .timerBox {
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: auto 44px auto 44px;
+      align-items: center;
+      gap: 10px;
+    }
+    .label { color: rgba(232,238,252,0.75); font-size: 15px; }
+    .num { font-size: 22px; font-weight: 850; text-align: center; min-width: 30px; }
+    .square {
+      width: 44px; height: 44px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      font-size: 24px; font-weight: 900;
+      display: grid; place-items: center;
+      cursor: pointer; user-select: none;
+    }
+    .square:active { background: rgba(255,255,255,0.25); }
+    .statusLine { margin-top: 12px; color: rgba(232,238,252,0.78); font-size: 14px; line-height: 1.4; }
+    .sectionTitle { margin-top: 18px; font-weight: 900; opacity: 0.9; letter-spacing: 0.02em; display: flex; align-items: center; gap: 8px; }
+    .sectionTitle:first-child { margin-top: 0; }
+    .collapseBtn { cursor: pointer; opacity: 0.6; font-size: 14px; }
     .hidden { display: none !important; }
   </style>
 </head>
 
 <body>
-  <!-- Fixed header with player and timer -->
-  <div class="fixedHeader">
-    <div class="headerTop">
-      <div class="logo">
-        <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise</a>
-        <span class="version">v1.5.3</span>
-      </div>
-      <div class="byline">by AboveAverageJoe</div>
+  <div class="card">
+    <h1><a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise</a> <span class="pill">v1.5.3</span></h1>
+    <div class="sub">
+      By <strong>AboveAverageJoe</strong> · Tap a tile to play · Designed for iOS background playback
     </div>
-    
-    <div class="playerRow">
-      <div class="nowPlaying" id="nowPlayingTrack">Select a sound below</div>
-      <audio id="player" controls playsinline preload="auto" loop></audio>
-    </div>
-    
-    <div class="timerRow">
-      <div class="timerLabel">Sleep</div>
-      <div class="timerDisplay off" id="timerDisplay">0:00</div>
-      <div class="timerControls">
-        <div class="timerBtn" id="hMinus">−</div>
-        <div class="timerNum" id="hours">0</div>
-        <div class="timerLabel">h</div>
-        <div class="timerBtn" id="hPlus">+</div>
-        <div class="timerBtn" id="mMinus">−</div>
-        <div class="timerNum" id="mins">0</div>
-        <div class="timerLabel">m</div>
-        <div class="timerBtn" id="mPlus">+</div>
-      </div>
-      <div class="timerStartBtn" id="toggleTimer">Start</div>
-    </div>
-  </div>
 
-  <!-- Scrollable stations -->
-  <div class="content">
+    <audio id="player" controls playsinline preload="auto" loop></audio>
+
+    <div class="panel">
+      <div class="panelTop">
+        <div>
+          <div class="label">Sleep Timer</div>
+          <div class="timerDisplay off" id="timerDisplay">0:00:00</div>
+        </div>
+        <button class="btn" id="toggleTimer">Start Timer</button>
+      </div>
+
+      <div class="timerGrid">
+        <div class="timerBox">
+          <div class="label">Hours</div>
+          <div class="square" id="hMinus">−</div>
+          <div class="num" id="hours">0</div>
+          <div class="square" id="hPlus">+</div>
+        </div>
+
+        <div class="timerBox">
+          <div class="label">Minutes</div>
+          <div class="square" id="mMinus">−</div>
+          <div class="num" id="mins">0</div>
+          <div class="square" id="mPlus">+</div>
+        </div>
+      </div>
+
+      <div class="statusLine" id="status">
+        Tap ★ to add favorites. Set timer above, then tap Start.
+      </div>
+    </div>
+
     <div id="favoritesSection" class="hidden">
       <div class="sectionTitle">
         ★ Favorites
@@ -269,10 +194,10 @@
       </div>
       <div class="grid" id="favGrid"></div>
     </div>
-    
+
     <div class="sectionTitle">Core Colors</div>
     <div class="grid" id="coreGrid"></div>
-    
+
     <div class="sectionTitle">Nature + Noise Blends</div>
     <div class="grid" id="extraGrid"></div>
   </div>
@@ -400,23 +325,18 @@
   ];
 
   const ALL_SOURCES = [...SOURCES_CORE, ...SOURCES_EXTRA];
-  
-  // Load favorites from localStorage
-  let favorites = JSON.parse(localStorage.getItem('colorNoiseFavorites') || '[]');
-  
+
   const player = document.getElementById("player");
-  const nowPlayingTrack = document.getElementById("nowPlayingTrack");
   const coreGrid = document.getElementById("coreGrid");
   const extraGrid = document.getElementById("extraGrid");
   const favGrid = document.getElementById("favGrid");
   const favoritesSection = document.getElementById("favoritesSection");
   const favCollapse = document.getElementById("favCollapse");
+  const status = document.getElementById("status");
   const timerDisplay = document.getElementById("timerDisplay");
-  const toggleTimerBtn = document.getElementById("toggleTimer");
-  const hoursEl = document.getElementById("hours");
-  const minsEl = document.getElementById("mins");
 
   let currentKey = null;
+  let favorites = JSON.parse(localStorage.getItem('colorNoiseFavorites') || '[]');
   let favCollapsed = false;
 
   function saveFavorites() {
@@ -435,35 +355,40 @@
   }
 
   function setActive(key) {
-    document.querySelectorAll(".playBtn").forEach(b => {
+    document.querySelectorAll(".btn.play").forEach(b => {
       const isActive = b.dataset.key === key;
       b.classList.toggle("active", isActive);
       if (b.textContent !== "Soon") {
         b.textContent = isActive ? "Playing" : "Play";
       }
     });
-    
     document.querySelectorAll(".favBtn").forEach(b => {
-      b.classList.toggle("active", favorites.includes(b.dataset.key));
-      b.textContent = favorites.includes(b.dataset.key) ? "★" : "☆";
+      const isFav = favorites.includes(b.dataset.key);
+      b.classList.toggle("active", isFav);
+      b.textContent = isFav ? "★" : "☆";
     });
   }
 
-  function makeTile(item, inFavorites = false) {
+  function makeTile(item) {
     const tile = document.createElement("div");
     tile.className = "tile";
 
     const top = document.createElement("div");
     top.className = "tileTop";
 
+    const name = document.createElement("div");
+    name.className = "name";
+    
     const dot = document.createElement("span");
     dot.className = "colorDot";
     dot.style.backgroundColor = item.color;
     dot.style.color = item.color;
-
-    const name = document.createElement("span");
-    name.className = "name";
-    name.textContent = item.name;
+    
+    const nameText = document.createElement("span");
+    nameText.textContent = item.name;
+    
+    name.appendChild(dot);
+    name.appendChild(nameText);
 
     const favBtn = document.createElement("span");
     favBtn.className = "favBtn" + (favorites.includes(item.key) ? " active" : "");
@@ -474,50 +399,42 @@
       toggleFavorite(item.key);
     };
 
-    const playBtn = document.createElement("div");
-    playBtn.className = "playBtn" + (currentKey === item.key ? " active" : "");
-    playBtn.dataset.key = item.key;
+    const btn = document.createElement("div");
+    btn.className = "btn play";
+    btn.dataset.key = item.key;
     
     if (item.url) {
-      playBtn.textContent = currentKey === item.key ? "Playing" : "Play";
-      playBtn.onclick = () => {
-        if (!item.url) return;
-        
+      btn.textContent = "Play";
+      btn.addEventListener("click", () => {
         if (currentKey === item.key && !player.paused) {
           player.pause();
           currentKey = null;
-          nowPlayingTrack.textContent = "Select a sound";
           setActive(null);
+          status.textContent = "Stopped.";
           return;
         }
 
         currentKey = item.key;
         setActive(currentKey);
-        nowPlayingTrack.textContent = "Loading...";
+        status.textContent = "Loading...";
 
         player.src = item.url;
         player.load();
-        
-        const playPromise = player.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            nowPlayingTrack.textContent = item.name;
-          }).catch(e => {
-            // On iOS, user may need to tap play on audio controls
-            nowPlayingTrack.textContent = item.name + " (tap ▶)";
-          });
-        }
-      };
+        player.play().then(() => {
+          status.textContent = "Playing: " + item.name;
+        }).catch(e => {
+          status.textContent = "Error: " + (e?.message || "Unknown");
+        });
+      });
     } else {
-      playBtn.textContent = "Soon";
-      playBtn.style.opacity = "0.5";
-      playBtn.style.cursor = "default";
+      btn.textContent = "Soon";
+      btn.style.opacity = "0.5";
+      btn.style.cursor = "default";
     }
 
-    top.appendChild(dot);
     top.appendChild(name);
     top.appendChild(favBtn);
-    top.appendChild(playBtn);
+    top.appendChild(btn);
 
     const desc = document.createElement("div");
     desc.className = "desc";
@@ -529,30 +446,28 @@
   }
 
   function renderAll() {
-    // Render favorites
+    // Favorites
     favGrid.innerHTML = "";
     const favItems = ALL_SOURCES.filter(s => favorites.includes(s.key));
     
-    if (favItems.length > 0 && !favCollapsed) {
+    if (favItems.length > 0) {
       favoritesSection.classList.remove("hidden");
-      favItems.forEach(s => favGrid.appendChild(makeTile(s, true)));
-    } else if (favItems.length > 0 && favCollapsed) {
-      favoritesSection.classList.remove("hidden");
-      favGrid.innerHTML = "";
+      if (!favCollapsed) {
+        favItems.forEach(s => favGrid.appendChild(makeTile(s)));
+      }
+      favCollapse.textContent = favCollapsed ? "▶" : "▼";
     } else {
       favoritesSection.classList.add("hidden");
     }
-    
-    favCollapse.textContent = favCollapsed ? "▶" : "▼";
 
-    // Render core
+    // Core
     coreGrid.innerHTML = "";
     SOURCES_CORE.forEach(s => coreGrid.appendChild(makeTile(s)));
 
-    // Render extra
+    // Extra
     extraGrid.innerHTML = "";
     SOURCES_EXTRA.forEach(s => extraGrid.appendChild(makeTile(s)));
-    
+
     setActive(currentKey);
   }
 
@@ -561,27 +476,28 @@
     renderAll();
   };
 
-  // Timer logic
+  // Timer
+  const hoursEl = document.getElementById("hours");
+  const minsEl = document.getElementById("mins");
+  const toggleTimerBtn = document.getElementById("toggleTimer");
+
   let setHours = 0;
   let setMins = 0;
   let endTime = null;
   let timerInterval = null;
 
   function formatTime(ms) {
-    if (ms <= 0) return "0:00";
+    if (ms <= 0) return "0:00:00";
     const totalSec = Math.ceil(ms / 1000);
     const h = Math.floor(totalSec / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
     const s = totalSec % 60;
-    if (h > 0) {
-      return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-    }
-    return m + ":" + String(s).padStart(2, "0");
+    return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   }
 
   function updateTimerDisplay() {
     if (!endTime) {
-      timerDisplay.textContent = "0:00";
+      timerDisplay.textContent = "0:00:00";
       timerDisplay.classList.add("off");
       return;
     }
@@ -596,14 +512,15 @@
 
   function startTimer() {
     const totalMs = (setHours * 3600 + setMins * 60) * 1000;
-    if (totalMs <= 0) return;
-
+    if (totalMs <= 0) {
+      status.textContent = "Set a time first.";
+      return;
+    }
     endTime = Date.now() + totalMs;
-    toggleTimerBtn.textContent = "Stop";
-    timerDisplay.classList.remove("off");
-    
+    toggleTimerBtn.textContent = "Stop Timer";
     updateTimerDisplay();
     timerInterval = setInterval(updateTimerDisplay, 1000);
+    status.textContent = "Timer started.";
   }
 
   function stopTimer(finished = false) {
@@ -611,27 +528,24 @@
       clearInterval(timerInterval);
       timerInterval = null;
     }
-    
     if (finished) {
       player.pause();
       currentKey = null;
-      nowPlayingTrack.textContent = "Timer finished";
       setActive(null);
+      status.textContent = "Timer finished — audio stopped.";
+    } else {
+      status.textContent = "Timer cancelled.";
     }
-    
     endTime = null;
-    toggleTimerBtn.textContent = "Start";
-    timerDisplay.textContent = "0:00";
+    toggleTimerBtn.textContent = "Start Timer";
+    timerDisplay.textContent = "0:00:00";
     timerDisplay.classList.add("off");
   }
 
-  toggleTimerBtn.onclick = () => {
-    if (endTime) {
-      stopTimer(false);
-    } else {
-      startTimer();
-    }
-  };
+  toggleTimerBtn.addEventListener("click", () => {
+    if (endTime) stopTimer(false);
+    else startTimer();
+  });
 
   document.getElementById("hMinus").onclick = () => { 
     setHours = Math.max(0, setHours - 1); 
@@ -652,7 +566,6 @@
     minsEl.textContent = setMins; 
   };
 
-  // Initial render
   renderAll();
 })();
 </script>
