@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ColorNoise v1.10.5.1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>ColorNoise v1.10.14</title>
 
   <!-- Cache control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -413,6 +413,9 @@
     }
     .settingsPanel {
       width: min(760px, 100%);
+      max-height: calc(100vh - 24px);
+      display: flex;
+      flex-direction: column;
       border-radius: 18px;
       border: 1px solid rgba(255,255,255,0.14);
       background: rgba(11, 15, 24, 0.98);
@@ -426,6 +429,7 @@
       justify-content: space-between;
       padding: 14px 16px;
       border-bottom: 1px solid rgba(255,255,255,0.10);
+      flex-shrink: 0;
     }
     .settingsTitle {
       font-size: 14px;
@@ -448,6 +452,7 @@
     .settingsBody {
       padding: 14px 16px 16px;
       display: grid;
+      overflow-y: auto;
       gap: 12px;
     }
     .settingRow {
@@ -594,7 +599,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.10.12</span>
+          <span class="version">v1.10.14</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
