@@ -48,6 +48,12 @@
       margin-bottom: 10px;
     }
     
+    .headerLeft {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
     .logo {
       font-size: 20px;
       font-weight: 800;
@@ -66,6 +72,21 @@
       font-size: 11px;
       color: rgba(232,238,252,0.6);
     }
+    .sourceStatus {
+      font-size: 11px;
+      color: rgba(232,238,252,0.6);
+    }
+    .sourceStatus .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .sourceStatus .dot.up { background: #2ecc71; box-shadow: 0 0 4px #2ecc71; }
+    .sourceStatus .dot.down { background: #e74c3c; box-shadow: 0 0 4px #e74c3c; }
+    .sourceStatus .dot.checking { background: #f39c12; box-shadow: 0 0 4px #f39c12; }
     
     /* Compact player */
     .playerRow {
@@ -141,6 +162,38 @@
     }
     .timerStartBtn:active { background: rgba(255,255,255,0.2); }
     
+    /* Sticky favorites panel */
+    .stickyFavorites {
+      position: sticky;
+      top: 140px; /* below header */
+      z-index: 50;
+      background: rgba(11, 15, 24, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 12px 16px;
+      margin: 0 -16px;
+    }
+    .stickyFavorites .sectionTitle {
+      margin-top: 0;
+    }
+    .stickyFavorites .grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+    }
+    .stickyFavorites .tile {
+      padding: 8px 10px;
+    }
+    .stickyFavorites .desc {
+      display: none;
+    }
+    .stickyFavorites .name {
+      font-size: 13px;
+    }
+    .stickyFavorites .colorDot {
+      width: 10px;
+      height: 10px;
+    }
+    
     /* Scrollable content */
     .content {
       padding: 16px;
@@ -158,18 +211,34 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      cursor: pointer;
+      user-select: none;
     }
     .sectionTitle:first-child { margin-top: 0; }
+    .sectionTitle:hover { color: rgba(232,238,252,0.8); }
     .collapseBtn {
       font-size: 12px;
-      cursor: pointer;
       opacity: 0.6;
+      transition: transform 0.2s;
+    }
+    .sectionTitle.collapsed .collapseBtn {
+      transform: rotate(-90deg);
+    }
+    .sectionNote {
+      font-size: 10px;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      opacity: 0.7;
     }
     
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 10px;
+    }
+    .grid.collapsed {
+      display: none;
     }
     
     .tile {
@@ -231,11 +300,16 @@
   <!-- Fixed header with player and timer -->
   <div class="fixedHeader">
     <div class="headerTop">
-      <div class="logo">
-        <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise</a>
-        <span class="version">v1.5.3</span>
+      <div class="headerLeft">
+        <div class="logo">
+          <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
+          <span class="version">v1.5.5</span>
+        </div>
+        <div class="byline">by AboveAverageJoe</div>
+        <div class="sourceStatus" id="sourceStatus">
+          <span class="dot checking"></span>Internet Archive: checking...
+        </div>
       </div>
-      <div class="byline">by AboveAverageJoe</div>
     </div>
     
     <div class="playerRow">
@@ -262,19 +336,39 @@
 
   <!-- Scrollable stations -->
   <div class="content">
-    <div id="favoritesSection" class="hidden">
-      <div class="sectionTitle">
+    <!-- Sticky favorites -->
+    <div id="favoritesSection" class="stickyFavorites hidden">
+      <div class="sectionTitle" id="favHeader">
+        <span class="collapseBtn">▼</span>
         ★ Favorites
-        <span class="collapseBtn" id="favCollapse">▼</span>
       </div>
       <div class="grid" id="favGrid"></div>
     </div>
     
-    <div class="sectionTitle">Core Colors</div>
+    <div class="sectionTitle" data-section="core">
+      <span class="collapseBtn">▼</span>
+      Core Colors
+    </div>
     <div class="grid" id="coreGrid"></div>
     
-    <div class="sectionTitle">Nature + Noise Blends</div>
-    <div class="grid" id="extraGrid"></div>
+    <div class="sectionTitle" data-section="blends">
+      <span class="collapseBtn">▼</span>
+      Nature + Noise Blends
+    </div>
+    <div class="grid" id="blendsGrid"></div>
+    
+    <div class="sectionTitle" data-section="binaural">
+      <span class="collapseBtn">▼</span>
+      Binaural Beats
+      <span class="sectionNote">🎧 headphones required</span>
+    </div>
+    <div class="grid" id="binauralGrid"></div>
+    
+    <div class="sectionTitle" data-section="nature">
+      <span class="collapseBtn">▼</span>
+      Nature Sounds
+    </div>
+    <div class="grid" id="natureGrid"></div>
   </div>
 
 <script>
@@ -285,7 +379,10 @@
     brown: "#8b4513",
     blue: "#4a90d9",
     green: "#2ecc71",
-    red: "#cd5c5c"
+    red: "#cd5c5c",
+    purple: "#9b59b6",
+    orange: "#e67e22",
+    gray: "#95a5a6"
   };
 
   const SOURCES_CORE = [
@@ -333,7 +430,7 @@
     }
   ];
 
-  const SOURCES_EXTRA = [
+  const SOURCES_BLENDS = [
     {
       key: "blue_waterfall",
       name: "Blue + Waterfall",
@@ -399,28 +496,91 @@
     }
   ];
 
-  const ALL_SOURCES = [...SOURCES_CORE, ...SOURCES_EXTRA];
+  const SOURCES_BINAURAL = [
+    {
+      key: "alpha_focus",
+      name: "Alpha (12 Hz) - Focus",
+      color: COLORS.purple,
+      desc: "Promotes alert relaxation and focus. Use headphones. 1 hour.",
+      url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Alpha%20Waves%20Binaural%20Beats%20%2812%20Hz%29%20%201H.mp3"
+    },
+    {
+      key: "theta_meditation",
+      name: "Theta (4 Hz) - Meditation",
+      color: COLORS.purple,
+      desc: "Deep meditation and creativity. Use headphones. 1 hour.",
+      url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Theta%20Waves%20%284%20Hz%29%20%20Deep%20Meditation%20-%201hr%20Binaural%20Beats.mp3"
+    },
+    {
+      key: "delta_sleep",
+      name: "Delta (0.5 Hz) - Deep Sleep",
+      color: COLORS.purple,
+      desc: "Deepest relaxation and sleep. Use headphones. 1 hour.",
+      url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Delta%20Waves%20%280.5%20Hz%20Binaural%20Beats%29%20%201H.mp3"
+    }
+  ];
+
+  const SOURCES_NATURE = [
+    {
+      key: "thunder_beach",
+      name: "Thunder + Rain + Beach",
+      color: COLORS.gray,
+      desc: "Very low rumbling thunder with rain and waves. 8 hours.",
+      url: "https://archive.org/download/relaxingsounds/Thunder%201%208h%20VeryLowRumbling%2CRain%2CWaves-Beach.mp3"
+    },
+    {
+      key: "ocean_night",
+      name: "Ocean Waves (Night)",
+      color: COLORS.blue,
+      desc: "Beach waves from sunset into night. 10 hours.",
+      url: "https://archive.org/download/relaxingsounds/Waves%201%2010h%20Beach-Sunset%20into%20Night.mp3"
+    },
+    {
+      key: "rain_medium",
+      name: "Rain (Medium)",
+      color: COLORS.gray,
+      desc: "Medium rain with low gentle thunder. 10 hours.",
+      url: "https://archive.org/download/relaxingsounds/Rain%202%20%28Med.%2B%29%2010h%20LowGentleThunder%2C%20Downpour.mp3"
+    },
+    {
+      key: "campfire_crickets",
+      name: "Campfire + Crickets",
+      color: COLORS.orange,
+      desc: "Crackling campfire with crickets and gentle water. 10 hours.",
+      url: "https://archive.org/download/relaxingsounds/FIRE%201%2010h%20CracklingCampfire%2CCrickets%2CRainOrRiver-Night.mp3"
+    },
+    {
+      key: "box_fan",
+      name: "Box Fan",
+      color: COLORS.white,
+      desc: "Strong box fan. Classic sleep sound. 10 hours.",
+      url: "https://archive.org/download/relaxingsounds/FAN%201%2010h%20Strong%20Box%20Fan.mp3"
+    }
+  ];
+
+  const ALL_SOURCES = [...SOURCES_CORE, ...SOURCES_BLENDS, ...SOURCES_BINAURAL, ...SOURCES_NATURE];
   
-  // Load favorites from localStorage
+  // Load state from localStorage
   let favorites = JSON.parse(localStorage.getItem('colorNoiseFavorites') || '[]');
+  let collapsedSections = JSON.parse(localStorage.getItem('colorNoiseCollapsed') || '{}');
   
   const player = document.getElementById("player");
   const nowPlayingTrack = document.getElementById("nowPlayingTrack");
-  const coreGrid = document.getElementById("coreGrid");
-  const extraGrid = document.getElementById("extraGrid");
-  const favGrid = document.getElementById("favGrid");
   const favoritesSection = document.getElementById("favoritesSection");
-  const favCollapse = document.getElementById("favCollapse");
+  const favGrid = document.getElementById("favGrid");
   const timerDisplay = document.getElementById("timerDisplay");
   const toggleTimerBtn = document.getElementById("toggleTimer");
   const hoursEl = document.getElementById("hours");
   const minsEl = document.getElementById("mins");
 
   let currentKey = null;
-  let favCollapsed = false;
 
   function saveFavorites() {
     localStorage.setItem('colorNoiseFavorites', JSON.stringify(favorites));
+  }
+  
+  function saveCollapsed() {
+    localStorage.setItem('colorNoiseCollapsed', JSON.stringify(collapsedSections));
   }
 
   function toggleFavorite(key) {
@@ -449,7 +609,7 @@
     });
   }
 
-  function makeTile(item, inFavorites = false) {
+  function makeTile(item, compact = false) {
     const tile = document.createElement("div");
     tile.className = "tile";
 
@@ -503,7 +663,6 @@
           playPromise.then(() => {
             nowPlayingTrack.textContent = item.name;
           }).catch(e => {
-            // On iOS, user may need to tap play on audio controls
             nowPlayingTrack.textContent = item.name + " (tap ▶)";
           });
         }
@@ -519,45 +678,79 @@
     top.appendChild(favBtn);
     top.appendChild(playBtn);
 
-    const desc = document.createElement("div");
-    desc.className = "desc";
-    desc.textContent = item.desc;
-
     tile.appendChild(top);
-    tile.appendChild(desc);
+    
+    if (!compact) {
+      const desc = document.createElement("div");
+      desc.className = "desc";
+      desc.textContent = item.desc;
+      tile.appendChild(desc);
+    }
+    
     return tile;
   }
 
+  function renderSection(gridId, sources) {
+    const grid = document.getElementById(gridId);
+    grid.innerHTML = "";
+    sources.forEach(s => grid.appendChild(makeTile(s)));
+  }
+
   function renderAll() {
-    // Render favorites
+    // Render favorites (compact)
     favGrid.innerHTML = "";
     const favItems = ALL_SOURCES.filter(s => favorites.includes(s.key));
     
-    if (favItems.length > 0 && !favCollapsed) {
+    if (favItems.length > 0) {
       favoritesSection.classList.remove("hidden");
-      favItems.forEach(s => favGrid.appendChild(makeTile(s, true)));
-    } else if (favItems.length > 0 && favCollapsed) {
-      favoritesSection.classList.remove("hidden");
-      favGrid.innerHTML = "";
+      const favHeader = document.getElementById("favHeader");
+      if (!collapsedSections.favorites) {
+        favItems.forEach(s => favGrid.appendChild(makeTile(s, true)));
+        favGrid.classList.remove("collapsed");
+        favHeader.classList.remove("collapsed");
+      } else {
+        favGrid.classList.add("collapsed");
+        favHeader.classList.add("collapsed");
+      }
     } else {
       favoritesSection.classList.add("hidden");
     }
+
+    // Render other sections
+    renderSection("coreGrid", SOURCES_CORE);
+    renderSection("blendsGrid", SOURCES_BLENDS);
+    renderSection("binauralGrid", SOURCES_BINAURAL);
+    renderSection("natureGrid", SOURCES_NATURE);
     
-    favCollapse.textContent = favCollapsed ? "▶" : "▼";
-
-    // Render core
-    coreGrid.innerHTML = "";
-    SOURCES_CORE.forEach(s => coreGrid.appendChild(makeTile(s)));
-
-    // Render extra
-    extraGrid.innerHTML = "";
-    SOURCES_EXTRA.forEach(s => extraGrid.appendChild(makeTile(s)));
+    // Apply collapsed state
+    document.querySelectorAll(".sectionTitle[data-section]").forEach(header => {
+      const section = header.dataset.section;
+      const grid = header.nextElementSibling;
+      if (collapsedSections[section]) {
+        header.classList.add("collapsed");
+        grid.classList.add("collapsed");
+      } else {
+        header.classList.remove("collapsed");
+        grid.classList.remove("collapsed");
+      }
+    });
     
     setActive(currentKey);
   }
 
-  favCollapse.onclick = () => {
-    favCollapsed = !favCollapsed;
+  // Section collapse handlers
+  document.querySelectorAll(".sectionTitle[data-section]").forEach(header => {
+    header.onclick = () => {
+      const section = header.dataset.section;
+      collapsedSections[section] = !collapsedSections[section];
+      saveCollapsed();
+      renderAll();
+    };
+  });
+  
+  document.getElementById("favHeader").onclick = () => {
+    collapsedSections.favorites = !collapsedSections.favorites;
+    saveCollapsed();
     renderAll();
   };
 
@@ -654,6 +847,28 @@
 
   // Initial render
   renderAll();
+
+  // Check Internet Archive status
+  (async function checkArchiveStatus() {
+    const statusEl = document.getElementById("sourceStatus");
+    const testUrl = "https://archive.org/download/1-hour-brown-noise-and-flowing-water-320/1%20hour%20Brown%20Noise%20and%20Flowing%20River%20flac.mp3";
+    
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      
+      const response = await fetch(testUrl, { 
+        method: "HEAD",
+        mode: "no-cors",
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeout);
+      statusEl.innerHTML = '<span class="dot up"></span>Internet Archive: online';
+    } catch (e) {
+      statusEl.innerHTML = '<span class="dot down"></span>Internet Archive: offline';
+    }
+  })();
 })();
 </script>
 </body>
