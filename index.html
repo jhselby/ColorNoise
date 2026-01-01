@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ColorNoise v1.8.2.2.1</title>
+  <title>ColorNoise v1.10.3.1</title>
 
   <!-- Cache control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -520,7 +520,52 @@
       transform: translateX(18px);
     }
 
+
+    .miniCtlBtn {
+      width: 34px;
+      height: 28px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: rgba(232,238,252,0.9);
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+    }
+    .miniCtlBtn:hover { background: rgba(255,255,255,0.12); }
+    .miniCtlBtn:active { background: rgba(255,255,255,0.18); }
     .playerEl.hidden { display: none; }
+
+    
+    /* Main-screen master volume */
+    .mainVolRow {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+    }
+    .mainVolLabel {
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(232,238,252,0.78);
+      min-width: 56px;
+    }
+    #mainMasterVol {
+      flex: 1;
+    }
+    .mainVolVal {
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      font-weight: 900;
+      color: rgba(232,238,252,0.75);
+      min-width: 48px;
+      text-align: right;
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -533,7 +578,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.8.2.2</span>
+          <span class="version">v1.10.3</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -549,6 +594,26 @@
       <div class="nowPlaying" id="nowPlayingTrack">Select a sound below</div>
       <audio id="playerA" class="playerEl" controls playsinline preload="auto" loop crossorigin="anonymous"></audio>
       <audio id="playerB" class="playerEl hidden" controls playsinline preload="auto" loop crossorigin="anonymous"></audio>
+
+      <!-- Master volume (optional) -->
+      <div class="mainVolRow" id="mainVolRow">
+        <div class="mainVolLabel">Volume</div>
+        <input type="range" id="mainMasterVol" min="0" max="1" step="0.01" aria-label="Master volume">
+        <div class="mainVolVal" id="mainMasterVolVal">100%</div>
+      </div>
+
+      <!-- Per-track volume adjustment (shown only when enabled) -->
+      <div class="mainVolRow hidden" id="perTrackRow">
+        <div class="mainVolLabel">Sound-specific normalization</div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+          <button class="miniCtlBtn" id="mainTrimDown" title="Make this sound quieter">−</button>
+          <div class="settingValue" id="mainTrimVal" style="min-width:56px; text-align:center;">0 dB</div>
+          <button class="miniCtlBtn" id="mainTrimUp" title="Make this sound louder">+</button>
+          <button class="miniCtlBtn" id="mainTrimReset" title="Reset this sound">↺</button>
+        </div>
+      </div>
+
+
     </div>
     
     <div class="timerRow">
@@ -620,6 +685,41 @@
           <div class="settingLabel">Show sleep timer</div>
           <label class="switch">
             <input type="checkbox" id="showSleepTimer">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+
+        <div class="settingRow">
+          <div class="settingLabel">Show master volume on main screen</div>
+          <label class="switch">
+            <input type="checkbox" id="showMainVolume">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settingRow">
+          <div class="settingLabel">Normalize track loudness</div>
+          <label class="switch">
+            <input type="checkbox" id="enableNormalize">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settingRow">
+          <div class="settingLabel">Per-track volume adjustment</div>
+          <div class="settingControl">
+            <button class="miniCtlBtn" id="trimDown" title="Decrease trim">−</button>
+            <div class="settingValue" id="trimVal">0 dB</div>
+            <button class="miniCtlBtn" id="trimUp" title="Increase trim">+</button>
+            <button class="miniCtlBtn" id="trimReset" title="Reset trim">↺</button>
+          </div>
+        </div>
+
+        <div class="settingRow">
+          <div class="settingLabel">Show sound-specific controls</div>
+          <label class="switch">
+            <input type="checkbox" id="showPerTrackPanel">
             <span class="slider"></span>
           </label>
         </div>
@@ -1006,6 +1106,7 @@
   const LS_LAST_KEY = "colorNoiseLastKey";
   const LS_LAST_NAME = "colorNoiseLastName";
   const LS_SETTINGS = "colorNoiseSettings_v1";
+  const LS_TRIMS = "colorNoiseTrackTrims_v1";
 
   // Load state
   let favorites = JSON.parse(localStorage.getItem(LS_FAV) || "[]");
@@ -1020,7 +1121,9 @@
       enableFadeOut: true,
       fadeOutSec: 2.0,
       masterVol: 1.0,
-      showSleepTimer: true
+      showSleepTimer: true,
+      showMainVolume: true,
+      enableNormalize: true
     };
     try {
       const saved = JSON.parse(localStorage.getItem(LS_SETTINGS) || "null");
@@ -1029,6 +1132,32 @@
       return defaults;
     }
   })();
+
+  // Per-track trim (dB) storage for loudness normalization
+  let trackTrims = (() => {
+    try { return JSON.parse(localStorage.getItem(LS_TRIMS) || "{}"); } catch { return {}; }
+  })();
+
+  function saveTrackTrims() {
+    try { localStorage.setItem(LS_TRIMS, JSON.stringify(trackTrims)); } catch {}
+  }
+
+  function getTrimDb(key) {
+    const v = Number(trackTrims[key] ?? 0);
+    if (!isFinite(v)) return 0;
+    return Math.max(-18, Math.min(18, v));
+  }
+
+  function setTrimDb(key, db) {
+    if (!key) return;
+    const v = Math.max(-18, Math.min(18, Number(db)));
+    trackTrims[key] = v;
+    saveTrackTrims();
+  }
+
+  function dbToGain(db) {
+    return Math.pow(10, db / 20);
+  }
 
   function saveSettings() {
     try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch {}
@@ -1061,6 +1190,22 @@
   const masterVolEl = document.getElementById("masterVol");
   const masterVolVal = document.getElementById("masterVolVal");
   const showSleepTimerEl = document.getElementById("showSleepTimer");
+  const showMainVolumeEl = document.getElementById("showMainVolume");
+  const enableNormalizeEl = document.getElementById("enableNormalize");
+  const showPerTrackPanelEl = document.getElementById("showPerTrackPanel");
+  const trimDownEl = document.getElementById("trimDown");
+  const trimUpEl = document.getElementById("trimUp");
+  const trimResetEl = document.getElementById("trimReset");
+  const trimValEl = document.getElementById("trimVal");
+
+  const mainVolRow = document.getElementById("mainVolRow");
+  const mainMasterVolEl = document.getElementById("mainMasterVol");
+  const mainMasterVolVal = document.getElementById("mainMasterVolVal");
+  const perTrackRow = document.getElementById("perTrackRow");
+  const mainTrimDownEl = document.getElementById("mainTrimDown");
+  const mainTrimUpEl = document.getElementById("mainTrimUp");
+  const mainTrimResetEl = document.getElementById("mainTrimReset");
+  const mainTrimValEl = document.getElementById("mainTrimVal");
 
   // Active player index
   let activeIdx = 0;
@@ -1073,26 +1218,75 @@
   let audioCtx = null;
   let mediaSources = [null, null];
   let gains = [null, null];
+  let trimGains = [null, null];
+  let compressor = null;
   let masterGain = null;
 
   function ensureAudioGraph() {
     if (audioCtx) return;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+    // Master gain (volume)
     masterGain = audioCtx.createGain();
     masterGain.gain.value = settings.masterVol;
+
+    // Light compressor (gentle leveling of peaks)
+    compressor = audioCtx.createDynamicsCompressor();
+    compressor.threshold.value = -24;   // dB
+    compressor.knee.value = 18;         // dB
+    compressor.ratio.value = 2.0;
+    compressor.attack.value = 0.01;     // s
+    compressor.release.value = 0.25;    // s
+
+    // Routing: per-player trim -> crossfade gain -> (optional compressor) -> master -> speakers
+    const postNode = () => (settings.enableNormalize ? compressor : masterGain);
+
+    // Connect post chain: compressor -> master -> destination OR direct master -> destination
+    if (settings.enableNormalize) {
+      compressor.connect(masterGain);
+    }
     masterGain.connect(audioCtx.destination);
 
     players.forEach((el, i) => {
       const src = audioCtx.createMediaElementSource(el);
-      const g = audioCtx.createGain();
+
+      const trim = audioCtx.createGain();    // per-track trim
+      const g = audioCtx.createGain();       // crossfade gain
+
+      trim.gain.value = 1;
       g.gain.value = (i === activeIdx) ? 1 : 0;
-      src.connect(g);
-      g.connect(masterGain);
+
+      src.connect(trim);
+      trim.connect(g);
+
+      if (settings.enableNormalize) {
+        g.connect(compressor);
+      } else {
+        g.connect(masterGain);
+      }
+
       mediaSources[i] = src;
+      trimGains[i] = trim;
       gains[i] = g;
     });
   }
+
+
+  async function resetAudioGraph() {
+    // Stop audio and rebuild the WebAudio graph on next play (needed when toggling normalization).
+    try { activePlayer().pause(); } catch {}
+    try { inactivePlayer().pause(); } catch {}
+    try {
+      if (audioCtx) await audioCtx.close();
+    } catch {}
+    audioCtx = null;
+    mediaSources = [null, null];
+    gains = [null, null];
+    trimGains = [null, null];
+    compressor = null;
+    masterGain = null;
+  }
+
 
   function resumeAudioContext() {
     // iOS/Safari may start suspended.
@@ -1199,6 +1393,8 @@
     setActive(null);
     setNowPlaying(reasonText);
     persistNowPlaying("", "");
+    applyPerTrackVisibility();
+    refreshTrimUI();
   }
 
   async function playItem(item) {
@@ -1206,6 +1402,14 @@
 
     ensureAudioGraph();
     resumeAudioContext();
+
+    // Apply per-track trim to the target player (if normalization enabled)
+    const applyTrimTo = (playerIndex, key) => {
+      if (!settings.enableNormalize) return;
+      const db = getTrimDb(key);
+      const g = dbToGain(db);
+      if (trimGains[playerIndex]) trimGains[playerIndex].gain.value = g;
+    };
 
     // Toggle behavior: if same track is playing, stop.
     if (currentKey === item.key && !activePlayer().paused) {
@@ -1219,8 +1423,11 @@
       persistNowPlaying(item.key, item.name);
       setActive(currentKey);
       setNowPlaying("Loading…");
+      applyPerTrackVisibility();
+      refreshTrimUI();
 
       const p = activePlayer();
+      applyTrimTo(activeIdx, item.key);
       p.src = "";
       p.load();
       p.src = item.url;
@@ -1234,7 +1441,7 @@
       return;
     }
 
-    // Switching tracks: crossfade if enabled, otherwise hard switch.
+    // Switching tracks: stop the old one and start the new one immediately (crossfade if enabled).
     const doCrossfade = settings.enableCrossfade && settings.crossfadeSec > 0;
 
     const oldIdx = activeIdx;
@@ -1246,6 +1453,8 @@
     persistNowPlaying(item.key, item.name);
     setActive(currentKey);
     setNowPlaying("Loading…");
+      applyPerTrackVisibility();
+      refreshTrimUI();
 
     // Prepare new player
     newP.classList.remove("hidden");
@@ -1256,44 +1465,57 @@
     newP.src = item.url;
     newP.load();
 
-    // Start new player at 0 gain if crossfading
+    // Initialize gains for the new player
     if (doCrossfade) {
       gains[newIdx].gain.value = 0;
     } else {
       gains[newIdx].gain.value = 1;
     }
 
-    const prom = newP.play();
-    if (prom !== undefined) {
-      prom.then(() => {
-        setNowPlaying(item.name);
-      }).catch(() => {
-        setNowPlaying(item.name + " (tap ▶)");
-      });
+    // Try to start the new track right away (within the click gesture)
+    let newStarted = false;
+    try {
+      const pr = newP.play();
+      if (pr !== undefined) await pr;
+      newStarted = true;
+      setNowPlaying(item.name);
+    } catch (e) {
+      // If autoplay is blocked for any reason, stop the old track anyway and leave the new one ready.
+      setNowPlaying(item.name + " (tap ▶)");
+      newStarted = false;
     }
 
     if (!doCrossfade) {
+      // Hard switch: always stop old immediately
       try { oldP.pause(); } catch {}
       activeIdx = newIdx;
       setActive(currentKey);
       return;
     }
 
-    // Crossfade: ramp old down, new up
+    // Crossfade: always fade the old one out. Fade the new one in only if it actually started.
     const sec = settings.crossfadeSec;
-    rampGain(gains[oldIdx], gains[oldIdx].gain.value, 0, sec);
-    rampGain(gains[newIdx], gains[newIdx].gain.value, 1, sec);
 
-    // After fade, stop old and swap active index
+    // Fade old down
+    rampGain(gains[oldIdx], gains[oldIdx].gain.value, 0, sec);
+
+    // Fade new up (only if started); otherwise keep it silent until user taps ▶.
+    if (newStarted) {
+      rampGain(gains[newIdx], gains[newIdx].gain.value, 1, sec);
+    } else {
+      gains[newIdx].gain.value = 0;
+    }
+
     setTimeout(() => {
-      // Clamp to silence before pausing (prevents rare "blip" in some browsers)
+      // Clamp to silence and stop old
       gains[oldIdx].gain.value = 0;
-      try { oldP.pause(); } catch {} 
+      try { oldP.pause(); } catch {}
       oldP.classList.add("hidden");
       newP.classList.remove("hidden");
       activeIdx = newIdx;
       setActive(currentKey);
     }, Math.ceil(sec * 1000));
+
   }
 
   // Attach media event instrumentation (both players)
@@ -1558,8 +1780,18 @@
 
     masterVolEl.value = settings.masterVol;
     masterVolVal.textContent = fmtPct(settings.masterVol);
+    if (mainMasterVolEl) mainMasterVolEl.value = settings.masterVol;
+    if (mainMasterVolVal) mainMasterVolVal.textContent = fmtPct(settings.masterVol);
 
     if (showSleepTimerEl) showSleepTimerEl.checked = !!settings.showSleepTimer;
+
+    if (showMainVolumeEl) showMainVolumeEl.checked = !!settings.showMainVolume;
+    if (enableNormalizeEl) enableNormalizeEl.checked = !!settings.enableNormalize;
+    if (showPerTrackPanelEl) showPerTrackPanelEl.checked = !!settings.showPerTrackPanel;
+
+    // Current track trim display
+    const db = getTrimDb(currentKey);
+    if (trimValEl) trimValEl.textContent = `${db.toFixed(0)} dB`;
   }
 
   function applyMasterVol() {
@@ -1571,6 +1803,24 @@
     if (!timerRow) return;
     if (settings.showSleepTimer) timerRow.classList.remove("hidden");
     else timerRow.classList.add("hidden");
+    updateLayout();
+  }
+
+
+  function applyMainVolumeVisibility() {
+    if (!mainVolRow) return;
+    if (settings.showMainVolume) mainVolRow.classList.remove("hidden");
+    else mainVolRow.classList.add("hidden");
+    updateLayout();
+  }
+
+
+  function applyPerTrackVisibility() {
+    if (!perTrackRow) return;
+    // Only show when normalization is enabled and a sound is selected
+    const shouldShow = !!settings.enableNormalize && !!settings.showPerTrackPanel && !!currentKey;
+    if (shouldShow) perTrackRow.classList.remove("hidden");
+    else perTrackRow.classList.add("hidden");
     updateLayout();
   }
 
@@ -1592,6 +1842,70 @@
     fadeOutSecVal.textContent = fmtSec(settings.fadeOutSec);
     saveSettings();
   };
+
+  if (showMainVolumeEl) {
+    showMainVolumeEl.onchange = () => {
+      settings.showMainVolume = showMainVolumeEl.checked;
+      saveSettings();
+      applyMainVolumeVisibility();
+  applyPerTrackVisibility();
+    };
+  }
+  if (showPerTrackPanelEl) {
+    showPerTrackPanelEl.onchange = () => {
+      settings.showPerTrackPanel = showPerTrackPanelEl.checked;
+      saveSettings();
+      applyPerTrackVisibility();
+    };
+  }
+
+
+
+  if (enableNormalizeEl) {
+    enableNormalizeEl.onchange = async () => {
+      settings.enableNormalize = enableNormalizeEl.checked;
+      saveSettings();
+
+      // Changing normalization re-wires the WebAudio graph; a reload is the most reliable way
+      // to ensure consistent behavior across browsers.
+      try { sessionStorage.setItem("colorNoiseDidReloadForNormalize", "1"); } catch {}
+      window.location.reload();
+    };
+  }
+
+  function refreshTrimUI() {
+    const db = getTrimDb(currentKey);
+    if (trimValEl) trimValEl.textContent = `${db.toFixed(0)} dB`;
+  }
+
+  if (trimDownEl) trimDownEl.onclick = () => {
+    if (!currentKey) return;
+    setTrimDb(currentKey, getTrimDb(currentKey) - 1);
+    // Apply immediately to active player if this track is playing
+    if (!activePlayer().paused && currentKey) {
+      if (settings.enableNormalize && trimGains[activeIdx]) trimGains[activeIdx].gain.value = dbToGain(getTrimDb(currentKey));
+    }
+    refreshTrimUI();
+  };
+
+  if (trimUpEl) trimUpEl.onclick = () => {
+    if (!currentKey) return;
+    setTrimDb(currentKey, getTrimDb(currentKey) + 1);
+    if (!activePlayer().paused && currentKey) {
+      if (settings.enableNormalize && trimGains[activeIdx]) trimGains[activeIdx].gain.value = dbToGain(getTrimDb(currentKey));
+    }
+    refreshTrimUI();
+  };
+
+  if (trimResetEl) trimResetEl.onclick = () => {
+    if (!currentKey) return;
+    setTrimDb(currentKey, 0);
+    if (!activePlayer().paused && currentKey) {
+      if (settings.enableNormalize && trimGains[activeIdx]) trimGains[activeIdx].gain.value = 1;
+    }
+    refreshTrimUI();
+  };
+
   if (showSleepTimerEl) {
     showSleepTimerEl.onchange = () => {
       settings.showSleepTimer = showSleepTimerEl.checked;
@@ -1600,9 +1914,59 @@
     };
   }
 
+
+  if (mainMasterVolEl) {
+    mainMasterVolEl.oninput = () => {
+      settings.masterVol = Number(mainMasterVolEl.value);
+      if (mainMasterVolVal) mainMasterVolVal.textContent = fmtPct(settings.masterVol);
+      if (masterVolEl) masterVolEl.value = settings.masterVol;
+      if (masterVolVal) masterVolVal.textContent = fmtPct(settings.masterVol);
+      saveSettings();
+      applyMasterVol();
+    };
+  }
+
+
+  function refreshTrimUI() {
+    if (!mainTrimValEl) return;
+    const db = getTrimDb(currentKey);
+    mainTrimValEl.textContent = `${db.toFixed(0)} dB`;
+  }
+
+  function applyCurrentTrimToActive() {
+    if (!settings.enableNormalize) return;
+    if (!currentKey) return;
+    if (!activePlayer().paused && trimGains && trimGains[activeIdx]) {
+      trimGains[activeIdx].gain.value = dbToGain(getTrimDb(currentKey));
+    }
+  }
+
+  if (mainTrimDownEl) mainTrimDownEl.onclick = () => {
+    if (!currentKey) return;
+    setTrimDb(currentKey, getTrimDb(currentKey) - 1);
+    applyCurrentTrimToActive();
+    refreshTrimUI();
+  };
+
+  if (mainTrimUpEl) mainTrimUpEl.onclick = () => {
+    if (!currentKey) return;
+    setTrimDb(currentKey, getTrimDb(currentKey) + 1);
+    applyCurrentTrimToActive();
+    refreshTrimUI();
+  };
+
+  if (mainTrimResetEl) mainTrimResetEl.onclick = () => {
+    if (!currentKey) return;
+    setTrimDb(currentKey, 0);
+    if (!activePlayer().paused && trimGains && trimGains[activeIdx]) trimGains[activeIdx].gain.value = 1;
+    refreshTrimUI();
+  };
+
   masterVolEl.oninput = () => {
     settings.masterVol = Number(masterVolEl.value);
     masterVolVal.textContent = fmtPct(settings.masterVol);
+    if (mainMasterVolEl) mainMasterVolEl.value = settings.masterVol;
+    if (mainMasterVolVal) mainMasterVolVal.textContent = fmtPct(settings.masterVol);
     saveSettings();
     applyMasterVol();
   };
@@ -1699,19 +2063,17 @@
 
   // Restore last selection (do not autoplay)
   (function restoreLastSelection() {
-    const lastKey = (localStorage.getItem(LS_LAST_KEY) || "").trim();
-    const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim();
-    if (!lastKey) return;
-    const found = ALL_SOURCES.find(s => s.key === lastKey);
-    if (!found) return;
-    currentKey = lastKey;
-    setActive(currentKey);
-    setNowPlaying((lastName || found.name) + " (ready)");
+    // Always start neutral on reload.
+    currentKey = null;
+    setActive(null);
+    setNowPlaying("Select a sound below");
   })();
 
   // Initial render
+  try { sessionStorage.removeItem("colorNoiseDidReloadForNormalize"); } catch {}
   renderAll();
   applySleepTimerVisibility();
+  applyMainVolumeVisibility();
 
   // Fix initial layout (fonts/audio controls can change header height after first paint)
   window.addEventListener("load", () => updateLayout());
