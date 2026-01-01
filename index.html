@@ -572,6 +572,16 @@
       font-weight: 600;
       margin-left: 6px;
     }
+    .iosNote {
+      color: #e74c3c;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .settingRow.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -584,7 +594,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.10.10</span>
+          <span class="version">v1.10.12</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -678,8 +688,8 @@
           </div>
         </div>
 
-        <div class="settingRow">
-          <div class="settingLabel">Master volume</div>
+        <div class="settingRow" id="masterVolRow">
+          <div class="settingLabel">Master volume <span class="iosNote hidden" id="masterVolIosNote">(not available on iOS)</span></div>
           <div class="settingControl">
             <input type="range" id="masterVol" min="0" max="1" step="0.01">
             <div class="settingValue" id="masterVolVal"></div>
@@ -696,24 +706,24 @@
         </div>
 
 
-        <div class="settingRow">
-          <div class="settingLabel">Show master volume on main screen</div>
+        <div class="settingRow" id="showMainVolumeRow">
+          <div class="settingLabel">Show master volume on main screen <span class="iosNote hidden" id="showMainVolumeIosNote">(not available on iOS)</span></div>
           <label class="switch">
             <input type="checkbox" id="showMainVolume">
             <span class="slider"></span>
           </label>
         </div>
 
-        <div class="settingRow">
-          <div class="settingLabel">Normalize track loudness <span class="reloadIndicator hidden" id="reloadIndicator">(reload required)</span></div>
+        <div class="settingRow" id="normalizeRow">
+          <div class="settingLabel">Normalize track loudness <span class="reloadIndicator hidden" id="reloadIndicator">(reload required)</span> <span class="iosNote hidden" id="normalizeIosNote">(not available on iOS)</span></div>
           <label class="switch">
             <input type="checkbox" id="enableNormalize">
             <span class="slider"></span>
           </label>
         </div>
 
-        <div class="settingRow">
-          <div class="settingLabel">Show sound-specific controls</div>
+        <div class="settingRow" id="showPerTrackRow">
+          <div class="settingLabel">Show sound-specific controls <span class="iosNote hidden" id="showPerTrackIosNote">(not available on iOS)</span></div>
           <label class="switch">
             <input type="checkbox" id="showPerTrackPanel">
             <span class="slider"></span>
@@ -1442,6 +1452,8 @@
       persistNowPlaying(item.key, item.name);
       setActive(currentKey);
       setNowPlaying("Loading…");
+      applyPerTrackVisibility();
+      refreshTrimUI();
 
       try { oldP.pause(); } catch {}
       try { oldP.removeAttribute("src"); oldP.load(); } catch {}
@@ -1896,6 +1908,12 @@
 
   function applyMainVolumeVisibility() {
     if (!mainVolRow) return;
+    // iOS doesn't support programmatic volume control (audio.volume is read-only)
+    // so hide the volume slider on iOS
+    if (IS_IOS) {
+      mainVolRow.classList.add("hidden");
+      return;
+    }
     if (settings.showMainVolume) mainVolRow.classList.remove("hidden");
     else mainVolRow.classList.add("hidden");
     updateLayout();
@@ -1904,10 +1922,14 @@
 
   function applyPerTrackVisibility() {
     if (!perTrackRow) return;
-    // On iOS, per-track adjustments work via player.volume even without WebAudio normalization
-    // On desktop, they require the WebAudio normalization graph
-    const normalizeOk = IS_IOS || !!settings.enableNormalize;
-    const shouldShow = normalizeOk && !!settings.showPerTrackPanel && !!currentKey;
+    // iOS doesn't support programmatic volume control (audio.volume is read-only)
+    // so hide per-track adjustments on iOS
+    if (IS_IOS) {
+      perTrackRow.classList.add("hidden");
+      return;
+    }
+    // On desktop, per-track adjustments require the WebAudio normalization graph
+    const shouldShow = !!settings.enableNormalize && !!settings.showPerTrackPanel && !!currentKey;
     if (shouldShow) perTrackRow.classList.remove("hidden");
     else perTrackRow.classList.add("hidden");
     updateLayout();
@@ -2158,6 +2180,22 @@
   renderAll();
   applySleepTimerVisibility();
   applyMainVolumeVisibility();
+
+  // Disable volume-related settings on iOS (audio.volume is read-only on iOS)
+  if (IS_IOS) {
+    const disableRows = ['masterVolRow', 'showMainVolumeRow', 'normalizeRow', 'showPerTrackRow'];
+    const showNotes = ['masterVolIosNote', 'showMainVolumeIosNote', 'normalizeIosNote', 'showPerTrackIosNote'];
+    
+    disableRows.forEach(id => {
+      const row = document.getElementById(id);
+      if (row) row.classList.add('disabled');
+    });
+    
+    showNotes.forEach(id => {
+      const note = document.getElementById(id);
+      if (note) note.classList.remove('hidden');
+    });
+  }
 
   // Fix initial layout (fonts/audio controls can change header height after first paint)
   window.addEventListener("load", () => updateLayout());
