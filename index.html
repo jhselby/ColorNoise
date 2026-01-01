@@ -5,593 +5,655 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Color Noise</title>
 
-  <meta name="theme-color" content="#0b0f18">
+  <!-- Cache control -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b0f18">
 
   <style>
     :root { color-scheme: dark; }
-    body{
-      margin:0; min-height:100vh; display:grid; place-items:center;
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; 
+      min-height: 100vh;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background:
-        radial-gradient(1200px 800px at 15% 10%, rgba(120,120,255,.22), transparent 60%),
-        radial-gradient(1000px 700px at 85% 90%, rgba(0,255,200,.12), transparent 60%),
-        linear-gradient(135deg, #0b0f18, #070a10);
-      color:#e8eefc;
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(120,120,255,.22), transparent 60%),
+                  radial-gradient(1000px 700px at 80% 90%, rgba(0,255,200,.12), transparent 60%),
+                  linear-gradient(135deg, #0b0f18, #070a10);
+      background-attachment: fixed;
+      color: #e8eefc;
     }
-
-    .card{
-      width:min(1200px, 94vw);
-      background:rgba(255,255,255,0.06);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:22px;
-      padding:24px;
-      box-shadow:0 20px 80px rgba(0,0,0,0.45);
+    
+    /* Fixed header with player and timer */
+    .fixedHeader {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 15, 24, 0.95);
       backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 12px 16px;
     }
-
-    h1{ margin:0 0 6px; font-size:40px; letter-spacing:-0.02em; }
-    .pill{
-      display:inline-block; padding:4px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,0.14);
-      background:rgba(255,255,255,0.06);
-      font-size:13px; color:rgba(232,238,252,0.78);
-      margin-left:10px; vertical-align:middle;
+    
+    .headerTop {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
     }
-
-    .sub{ margin:0 0 16px; color:rgba(232,238,252,0.78); font-size:16px; line-height:1.35; }
-
-    .toolbar{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    
+    .logo {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .logo a { color: inherit; text-decoration: none; }
+    .version {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.1);
+      color: rgba(232,238,252,0.7);
+      margin-left: 6px;
+    }
+    .byline {
+      font-size: 11px;
+      color: rgba(232,238,252,0.6);
+    }
+    
+    /* Compact player */
+    .playerRow {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .nowPlaying {
+      font-size: 14px;
+      color: rgba(232,238,252,0.9);
+      font-weight: 600;
+    }
+    audio {
+      width: 100%;
+      height: 40px;
+    }
+    
+    /* Compact timer */
+    .timerRow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.08);
     }
-
-    .seg{
-      display:flex; gap:8px; flex-wrap:wrap; align-items:center;
-      padding:10px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.18);
+    .timerLabel {
+      font-size: 11px;
+      color: rgba(232,238,252,0.6);
     }
-
-    .seg label{ font-size:14px; opacity:0.85; }
-    select{
-      background:rgba(255,255,255,0.08);
-      border:1px solid rgba(255,255,255,0.14);
-      color:#e8eefc;
-      border-radius:12px;
-      padding:10px 12px;
-      font-weight:700;
-      outline:none;
+    .timerDisplay {
+      font-size: 16px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      min-width: 60px;
     }
-
-    .sectionTitle{
-      margin-top:18px;
-      font-weight:900;
-      opacity:0.92;
-      letter-spacing:0.02em;
+    .timerDisplay.off { opacity: 0.4; }
+    .timerControls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
-
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
-      gap:14px;
-      margin-top:12px;
+    .timerBtn {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      user-select: none;
     }
-
-    .tile{
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.18);
-      padding:14px;
-      position:relative;
-      overflow:hidden;
+    .timerBtn:active { background: rgba(255,255,255,0.2); }
+    .timerNum {
+      font-size: 14px;
+      font-weight: 700;
+      min-width: 20px;
+      text-align: center;
     }
-
-    .tile::before{
-      content:"";
-      position:absolute; inset:0;
-      background: radial-gradient(600px 220px at 20% 12%, color-mix(in oklab, var(--c) 25%, transparent), transparent 60%);
-      pointer-events:none;
-      opacity:0.85;
+    .timerStartBtn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: #e8eefc;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: auto;
     }
-
-    .tileInner{ position:relative; z-index:1; }
-
-    .tileTop{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
+    .timerStartBtn:active { background: rgba(255,255,255,0.2); }
+    
+    /* Scrollable content */
+    .content {
+      padding: 16px;
+      max-width: 800px;
+      margin: 0 auto;
     }
-
-    .nameRow{ display:flex; align-items:center; gap:10px; }
-    .dot{
-      width:12px; height:12px; border-radius:999px;
-      background: var(--c);
-      box-shadow: 0 0 0 2px rgba(255,255,255,0.12);
-      flex:0 0 auto;
+    
+    .sectionTitle {
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(232,238,252,0.6);
+      margin: 16px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .name{ font-size:18px; font-weight:850; }
-
-    .btn{
-      cursor:pointer;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,0.14);
+    .sectionTitle:first-child { margin-top: 0; }
+    .collapseBtn {
+      font-size: 12px;
+      cursor: pointer;
+      opacity: 0.6;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+    }
+    
+    .tile {
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.25);
+      padding: 12px;
+    }
+    .tileTop {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .colorDot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px currentColor;
+    }
+    .name {
+      font-size: 15px;
+      font-weight: 700;
+      flex: 1;
+    }
+    .favBtn {
+      font-size: 16px;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: opacity 0.2s;
+    }
+    .favBtn:hover, .favBtn.active { opacity: 1; }
+    .playBtn {
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.15);
       background: rgba(255,255,255,0.08);
-      color:#e8eefc;
-      font-weight:800;
-      user-select:none;
-      white-space:nowrap;
+      color: #e8eefc;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
     }
-    .btn:hover{ background: rgba(255,255,255,0.12); }
-
-    .btn.play{
-      background: color-mix(in oklab, var(--c) 12%, rgba(255,255,255,0.08));
-      border-color: color-mix(in oklab, var(--c) 25%, rgba(255,255,255,0.14));
+    .playBtn:hover { background: rgba(255,255,255,0.12); }
+    .playBtn.active {
+      background: rgba(120,180,255,0.25);
+      border-color: rgba(120,180,255,0.5);
     }
-
-    .btn.play.active{
-      outline: 2px solid color-mix(in oklab, var(--c) 75%, white 25%);
-      box-shadow: 0 0 0 6px color-mix(in oklab, var(--c) 20%, transparent);
+    .desc {
+      font-size: 12px;
+      color: rgba(232,238,252,0.6);
+      margin-top: 6px;
+      line-height: 1.4;
     }
-
-    .desc{
-      margin-top:8px;
-      font-size:14px;
-      color:rgba(232,238,252,0.78);
-      line-height:1.35;
-    }
-
-    audio{ width:100%; margin-top:14px; }
-
-    .panel{
-      margin-top:14px;
-      padding:16px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.18);
-      display:grid;
-      grid-template-columns: 1fr auto;
-      gap:16px;
-      align-items:center;
-    }
-
-    .label{ color:rgba(232,238,252,0.75); font-size:16px; }
-    .num{ font-size:20px; font-weight:900; text-align:center; }
-
-    .timerGrid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
-      margin-top:10px;
-    }
-
-    .timerBox{
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(255,255,255,0.06);
-      border-radius:16px;
-      padding:12px;
-      display:grid;
-      grid-template-columns:auto 40px auto 40px;
-      align-items:center;
-      gap:10px;
-    }
-
-    .square{
-      width:40px; height:40px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,0.2);
-      background:rgba(255,255,255,0.12);
-      color:#fff;
-      font-size:22px;
-      font-weight:900;
-      display:grid; place-items:center;
-      cursor:pointer; user-select:none;
-    }
-
-    .statusLine{ margin-top:10px; color:rgba(232,238,252,0.78); font-size:14px; line-height:1.35; }
-    .small{ margin-top:8px; color:rgba(232,238,252,0.65); font-size:13px; }
-    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-
-    .footerRow{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-      margin-top:10px;
-    }
-
-    .miniBtn{
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.08);
-      color:#e8eefc;
-      font-weight:800;
-      cursor:pointer;
-    }
+    
+    .hidden { display: none !important; }
   </style>
 </head>
 
 <body>
-  <div class="card">
-    <h1>Color Noise <span class="pill">Above Average Joe • v1.3</span></h1>
-    <div class="sub">
-      Tap any tile to play. iOS requires one tap to start audio; once started it should continue during screen lock.
-      <br>All sources here are <b>direct MP3 URLs</b> (no dynamic URL building), which avoids the “won’t play” bug.
-    </div>
-
-    <div class="toolbar">
-      <div class="seg">
-        <label for="mode">Show:</label>
-        <select id="mode">
-          <option value="all" selected>All</option>
-          <option value="pure">Pure colors</option>
-          <option value="blends">Nature + blends</option>
-        </select>
+  <!-- Fixed header with player and timer -->
+  <div class="fixedHeader">
+    <div class="headerTop">
+      <div class="logo">
+        <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise</a>
+        <span class="version">v1.5.3</span>
       </div>
-
-      <div class="seg">
-        <label>Quick:</label>
-        <button class="miniBtn" id="stopBtn">Stop</button>
-        <button class="miniBtn" id="replayBtn">Replay</button>
-      </div>
+      <div class="byline">by AboveAverageJoe</div>
     </div>
-
-    <div class="sectionTitle" id="pureTitle">Pure color noises</div>
-    <div class="grid" id="pureGrid"></div>
-
-    <div class="sectionTitle" id="blendTitle">Nature + noise blends (and pure nature)</div>
-    <div class="grid" id="blendGrid"></div>
-
-    <audio id="player" controls playsinline preload="auto"></audio>
-
-    <div class="panel">
-      <div>
-        <div class="label">Sleep timer</div>
-        <div class="num" id="timerLabel">Off</div>
-
-        <div class="timerGrid">
-          <div class="timerBox">
-            <div class="label">Hours</div>
-            <div class="square" id="hMinus">−</div>
-            <div class="num" id="hours">0</div>
-            <div class="square" id="hPlus">+</div>
-          </div>
-
-          <div class="timerBox">
-            <div class="label">Minutes (15m)</div>
-            <div class="square" id="mMinus">−</div>
-            <div class="num" id="mins">0</div>
-            <div class="square" id="mPlus">+</div>
-          </div>
-        </div>
-
-        <div class="statusLine" id="status">
-          Tip: start audio once, then lock the screen to confirm it continues.
-        </div>
-
-        <div class="footerRow small">
-          <span id="nowPlaying"></span>
-          <span id="debug" class="mono"></span>
-        </div>
-      </div>
-
-      <button class="btn" id="toggleTimer">Start timer</button>
+    
+    <div class="playerRow">
+      <div class="nowPlaying" id="nowPlayingTrack">Select a sound below</div>
+      <audio id="player" controls playsinline preload="auto" loop></audio>
     </div>
+    
+    <div class="timerRow">
+      <div class="timerLabel">Sleep</div>
+      <div class="timerDisplay off" id="timerDisplay">0:00</div>
+      <div class="timerControls">
+        <div class="timerBtn" id="hMinus">−</div>
+        <div class="timerNum" id="hours">0</div>
+        <div class="timerLabel">h</div>
+        <div class="timerBtn" id="hPlus">+</div>
+        <div class="timerBtn" id="mMinus">−</div>
+        <div class="timerNum" id="mins">0</div>
+        <div class="timerLabel">m</div>
+        <div class="timerBtn" id="mPlus">+</div>
+      </div>
+      <div class="timerStartBtn" id="toggleTimer">Start</div>
+    </div>
+  </div>
+
+  <!-- Scrollable stations -->
+  <div class="content">
+    <div id="favoritesSection" class="hidden">
+      <div class="sectionTitle">
+        ★ Favorites
+        <span class="collapseBtn" id="favCollapse">▼</span>
+      </div>
+      <div class="grid" id="favGrid"></div>
+    </div>
+    
+    <div class="sectionTitle">Core Colors</div>
+    <div class="grid" id="coreGrid"></div>
+    
+    <div class="sectionTitle">Nature + Noise Blends</div>
+    <div class="grid" id="extraGrid"></div>
   </div>
 
 <script>
 (() => {
   const COLORS = {
-    white:  "#f2f2f2",
-    pink:   "#ff5aa5",
-    brown:  "#b06a3b",
-    red:    "#ff3b30",
-    blue:   "#3b82f6",
-    green:  "#22c55e",
-    grey:   "#9ca3af",
-    violet: "#a855f7",
-    teal:   "#14b8a6",
-    amber:  "#f59e0b",
-    ocean:  "#38bdf8",
-    fire:   "#fb7185",
-    rain:   "#60a5fa",
-    river:  "#34d399",
-    waterfall: "#22d3ee"
+    white: "#ffffff",
+    pink: "#ff69b4",
+    brown: "#8b4513",
+    blue: "#4a90d9",
+    green: "#2ecc71",
+    red: "#cd5c5c"
   };
 
-  // IMPORTANT: These are FULL, ALREADY-ENCODED URLs.
-  // No encodeURIComponent, no helper functions. This is what keeps Safari happy.
-  const PURE = [
+  const SOURCES_CORE = [
     {
-      key:"white_river_1h",
-      color:"white",
-      name:"White (River + fan-ish)",
-      desc:"Masking sudden noises; good for sleep + focus. Broad, even-spectrum hiss.",
-      url:"https://archive.org/download/24-hours-lectrofan-sound-and-white-noise-river-128/1%20hour%20lectrofan%20sound%20and%20white%20noise%20river%20128.mp3"
+      key: "white",
+      name: "White",
+      color: COLORS.white,
+      desc: "Broad spectrum hiss. Best for masking sudden noises. 1 hour.",
+      url: "https://archive.org/download/24-hours-lectrofan-sound-and-white-noise-river-128/1%20hour%20lectrofan%20sound%20and%20white%20noise%20river%20128.mp3"
     },
     {
-      key:"pink_1h",
-      color:"pink",
-      name:"Pink (1h)",
-      desc:"Smoother than white; often feels like rainfall. Popular for relaxation/sleep.",
-      url:"https://archive.org/download/1-hour-pink-noise-quieter-version-2-128/1%20hour%20pink%20noise%20%28quieter%20version%202%29%20128.mp3"
+      key: "pink",
+      name: "Pink",
+      color: COLORS.pink,
+      desc: "Smoother than white. Feels like rainfall. 1 hour.",
+      url: "https://archive.org/download/classical-music-mixed-with-pink-noise-for-sleep-and-relax_202105/Soothing%20Deep%20Pink%20Noise%20%201%20Hour.mp3"
     },
     {
-      key:"brown_1h",
-      color:"brown",
-      name:"Brown / Red (1h)",
-      desc:"Deeper, bass-heavy rumble. Great for stress relief, deep focus, and sleep.",
-      url:"https://archive.org/download/onlymp-3.to-1-hour-brown-noise-for-focus-sleep-and-comfort-no-music-hjmn-ifd-6-lcg-192k-1707397200/onlymp3.to%20-%201%20Hour%20BROWN%20NOISE%20for%20FOCUS%20SLEEP%20AND%20COMFORT%20no%20music%20-HJMnIfd6Lcg-192k-1707397200.mp3"
+      key: "brown",
+      name: "Brown",
+      color: COLORS.brown,
+      desc: "Deep bass-heavy rumble. Very calming. 1 hour.",
+      url: "https://archive.org/download/1-hour-brown-noise-and-flowing-water-320/1%20hour%20Brown%20Noise%20and%20Flowing%20River%20flac.mp3"
     },
     {
-      key:"deep_blue_river_1h",
-      color:"blue",
-      name:"Blue (Deep blue + river rapids)",
-      desc:"Brighter/high-frequency-weighted. Good for masking higher-pitched distractions.",
-      url:"https://archive.org/download/1-hour-texas-river-rapids-and-deep-blue-noise-320/1%20hour%20texas%20river%20rapids%20and%20deep%20blue%20noise%20320.mp3"
-    },
-
-    // “All colors” adds violet/grey/green labels.
-    // Direct, long, pure versions are rarer; these are usable substitutes.
-    {
-      key:"grey_short",
-      color:"grey",
-      name:"Grey (short, placeholder)",
-      desc:"Perceptually flatter to human ears. This source may be short; keep as an experimental option.",
-      url:"https://archive.org/download/grey-noise_202210/grey%20noise.mp3"
+      key: "blue",
+      name: "Blue",
+      color: COLORS.blue,
+      desc: "Higher frequencies. Masks high-pitched sounds. 1 hour.",
+      url: "https://archive.org/download/1-hour-texas-river-rapids-and-deep-blue-noise-320/1%20hour%20texas%20river%20rapids%20and%20deep%20blue%20noise%20320.mp3"
     },
     {
-      key:"violet_short",
-      color:"violet",
-      name:"Violet (short, placeholder)",
-      desc:"Very bright/high-frequency “hiss.” Often used for tinnitus masking; usually not for sleep.",
-      url:"https://archive.org/download/colorsofnoise/violet.flac"
+      key: "green_pure",
+      name: "Green (Pure)",
+      color: COLORS.green,
+      desc: "Coming soon — pure green noise source being sourced.",
+      url: null
     },
     {
-      key:"green_proxy",
-      color:"green",
-      name:"Green (proxy: rain + fan)",
-      desc:"“Green noise” is often described as nature-like/balanced. This is a nature-proxy option.",
-      url:"https://archive.org/download/1-hour-mountain-rain-and-lectrofan-sound-320/1%20hour%20mountain%20rain%20and%20lectrofan%20sound%20320.mp3"
+      key: "red",
+      name: "Red (Deep Brown)",
+      color: COLORS.red,
+      desc: "Even deeper than brown. Extremely relaxing. 1 hour.",
+      url: "https://archive.org/download/red-noise_202207/red%20noise.mp3"
     }
   ];
 
-  const BLENDS = [
+  const SOURCES_EXTRA = [
     {
-      key:"waterfall_blue_1h",
-      color:"waterfall",
-      name:"Waterfall + Blue noise (1h)",
-      desc:"Waterfall texture + blue noise masking. Great for sleep masking without sterile hiss.",
-      url:"https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20sleep%20blue%20noise%20rem%20asmr%20320.mp3"
+      key: "blue_waterfall",
+      name: "Blue + Waterfall",
+      color: COLORS.blue,
+      desc: "Blue noise with waterfall. 1 hour.",
+      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20sleep%20blue%20noise%20rem%20asmr%20320.mp3"
     },
     {
-      key:"waterfall_red_1h",
-      color:"red",
-      name:"Waterfall + Red noise (1h)",
-      desc:"Waterfall texture + deeper red/brown-ish masking.",
-      url:"https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20rem%20red%20noise%20sleep%20320.mp3"
+      key: "red_waterfall",
+      name: "Red + Waterfall",
+      color: COLORS.red,
+      desc: "Deep red/brown with waterfall. 1 hour.",
+      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20rem%20red%20noise%20sleep%20320.mp3"
     },
     {
-      key:"loud_small_river_1h",
-      color:"river",
-      name:"Loud Small River Waterfall (1h)",
-      desc:"Pure nature masking. Strong water texture for steady coverage.",
-      url:"https://archive.org/download/1-hour-loud-small-river-waterfall/1%20hour%20loud%20small%20river%20waterfall%20320.mp3"
+      key: "brown_river",
+      name: "Brown + River",
+      color: COLORS.brown,
+      desc: "Brown noise with peaceful river. 1 hour.",
+      url: "https://archive.org/download/24-hours-peaceful-river-and-brown-noise-vbr/1%20hour%20v3%20river%20and%20brown%20noise%20vbr.mp3"
     },
     {
-      key:"white_industrial_fan_1h",
-      color:"white",
-      name:"White + Industrial fan (1h)",
-      desc:"Heavier fan texture. Very effective for blocking intermittent household noise.",
-      url:"https://archive.org/download/1-hour-white-noise-river-and-industrial-fan-flac/1%20hour%20white%20noise%20river%20and%20industrial%20fan%20320.mp3"
+      key: "brown_rain",
+      name: "Brown + Rain",
+      color: COLORS.brown,
+      desc: "Brown noise with rain. 1 hour.",
+      url: "https://archive.org/download/red-noise_202207/1-rain%20and%20brown%20noise%20-%20320%20-%201%20hour.mp3"
     },
     {
-      key:"mountain_rain_v2_1h",
-      color:"rain",
-      name:"Mountain rain + white noise (v2, 1h)",
-      desc:"Rain shower + white noise machine vibe. Nice for sleep/reading.",
-      url:"https://archive.org/download/1-hour-mountain-rain-and-lectrofan-sound-320/1%20hour%20v2%20mountain%20rain%20shower%20and%20lectrofan%20white%20noise%20machine%20320.mp3"
+      key: "brown_stream",
+      name: "Brown + Mountain Stream",
+      color: COLORS.brown,
+      desc: "Brown noise with stream and rain. 1 hour.",
+      url: "https://archive.org/download/1-hour-mountain-stream-doubled-and-brown-noise-flac/1%20hour%20mountain%20stream%20-%20rain%20shower%20-%20brown%20noise%20v2%20320.mp3"
+    },
+    {
+      key: "white_roaring",
+      name: "White + Roaring Waterfall",
+      color: COLORS.white,
+      desc: "White noise with powerful waterfall. 10 hours.",
+      url: "https://archive.org/download/1-fan-4-1-hour-flac/Roaring%20Waterfall%20White%20Noise%2010%20hours.mp3"
+    },
+    {
+      key: "brown_terraced",
+      name: "Brown + Terraced Waterfall",
+      color: COLORS.brown,
+      desc: "Brown noise with cascading water. 10 hours.",
+      url: "https://archive.org/download/1-fan-4-1-hour-flac/10%20hours%20terraced%20waterfall%20brown%20noise%20sound%20128.mp3"
+    },
+    {
+      key: "pink_reading",
+      name: "Pink for Focus",
+      color: COLORS.pink,
+      desc: "Pink noise for reading/concentration. 1 hour.",
+      url: "https://archive.org/download/classical-music-mixed-with-pink-noise-for-sleep-and-relax_202105/Pink%20Noise%20Focus%20on%20Reading%20Without%20DistractionsRuido%20RosaLeer%20Sin%20Distracciones.mp3"
+    },
+    {
+      key: "green_stream",
+      name: "Green + Stream",
+      color: COLORS.green,
+      desc: "Mountain stream — nature's green noise. 1 hour.",
+      url: "https://archive.org/download/10-hours-white-noise-river-mountain-stream-doubled-320/1%20Hour%20Calming%20Mountain%20Stream.mp3"
     }
   ];
 
+  const ALL_SOURCES = [...SOURCES_CORE, ...SOURCES_EXTRA];
+  
+  // Load favorites from localStorage
+  let favorites = JSON.parse(localStorage.getItem('colorNoiseFavorites') || '[]');
+  
   const player = document.getElementById("player");
-  const pureGrid = document.getElementById("pureGrid");
-  const blendGrid = document.getElementById("blendGrid");
-  const pureTitle = document.getElementById("pureTitle");
-  const blendTitle = document.getElementById("blendTitle");
-  const modeSel = document.getElementById("mode");
-
-  const status = document.getElementById("status");
-  const nowPlaying = document.getElementById("nowPlaying");
-  const debug = document.getElementById("debug");
-
-  const stopBtn = document.getElementById("stopBtn");
-  const replayBtn = document.getElementById("replayBtn");
+  const nowPlayingTrack = document.getElementById("nowPlayingTrack");
+  const coreGrid = document.getElementById("coreGrid");
+  const extraGrid = document.getElementById("extraGrid");
+  const favGrid = document.getElementById("favGrid");
+  const favoritesSection = document.getElementById("favoritesSection");
+  const favCollapse = document.getElementById("favCollapse");
+  const timerDisplay = document.getElementById("timerDisplay");
+  const toggleTimerBtn = document.getElementById("toggleTimer");
+  const hoursEl = document.getElementById("hours");
+  const minsEl = document.getElementById("mins");
 
   let currentKey = null;
-  let currentUrl = null;
+  let favCollapsed = false;
 
-  function setActive(key){
-    document.querySelectorAll(".btn.play").forEach(b => b.classList.toggle("active", b.dataset.key === key));
+  function saveFavorites() {
+    localStorage.setItem('colorNoiseFavorites', JSON.stringify(favorites));
   }
 
-  function tile(item){
-    const t = document.createElement("div");
-    t.className = "tile";
-    t.style.setProperty("--c", COLORS[item.color] || "#93c5fd");
+  function toggleFavorite(key) {
+    const idx = favorites.indexOf(key);
+    if (idx === -1) {
+      favorites.push(key);
+    } else {
+      favorites.splice(idx, 1);
+    }
+    saveFavorites();
+    renderAll();
+  }
 
-    const inner = document.createElement("div");
-    inner.className = "tileInner";
+  function setActive(key) {
+    document.querySelectorAll(".playBtn").forEach(b => {
+      const isActive = b.dataset.key === key;
+      b.classList.toggle("active", isActive);
+      if (b.textContent !== "Soon") {
+        b.textContent = isActive ? "Playing" : "Play";
+      }
+    });
+    
+    document.querySelectorAll(".favBtn").forEach(b => {
+      b.classList.toggle("active", favorites.includes(b.dataset.key));
+      b.textContent = favorites.includes(b.dataset.key) ? "★" : "☆";
+    });
+  }
+
+  function makeTile(item, inFavorites = false) {
+    const tile = document.createElement("div");
+    tile.className = "tile";
 
     const top = document.createElement("div");
     top.className = "tileTop";
 
-    const nameRow = document.createElement("div");
-    nameRow.className = "nameRow";
+    const dot = document.createElement("span");
+    dot.className = "colorDot";
+    dot.style.backgroundColor = item.color;
+    dot.style.color = item.color;
 
-    const dot = document.createElement("div");
-    dot.className = "dot";
-
-    const name = document.createElement("div");
+    const name = document.createElement("span");
     name.className = "name";
     name.textContent = item.name;
 
-    nameRow.appendChild(dot);
-    nameRow.appendChild(name);
-
-    const btn = document.createElement("div");
-    btn.className = "btn play";
-    btn.textContent = "Play";
-    btn.dataset.key = item.key;
-
-    btn.onclick = async () => {
-      await playItem(item);
+    const favBtn = document.createElement("span");
+    favBtn.className = "favBtn" + (favorites.includes(item.key) ? " active" : "");
+    favBtn.textContent = favorites.includes(item.key) ? "★" : "☆";
+    favBtn.dataset.key = item.key;
+    favBtn.onclick = (e) => {
+      e.stopPropagation();
+      toggleFavorite(item.key);
     };
 
-    top.appendChild(nameRow);
-    top.appendChild(btn);
+    const playBtn = document.createElement("div");
+    playBtn.className = "playBtn" + (currentKey === item.key ? " active" : "");
+    playBtn.dataset.key = item.key;
+    
+    if (item.url) {
+      playBtn.textContent = currentKey === item.key ? "Playing" : "Play";
+      playBtn.onclick = () => {
+        if (!item.url) return;
+        
+        if (currentKey === item.key && !player.paused) {
+          player.pause();
+          currentKey = null;
+          nowPlayingTrack.textContent = "Select a sound";
+          setActive(null);
+          return;
+        }
+
+        currentKey = item.key;
+        setActive(currentKey);
+        nowPlayingTrack.textContent = "Loading...";
+
+        player.src = item.url;
+        player.load();
+        
+        const playPromise = player.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            nowPlayingTrack.textContent = item.name;
+          }).catch(e => {
+            // On iOS, user may need to tap play on audio controls
+            nowPlayingTrack.textContent = item.name + " (tap ▶)";
+          });
+        }
+      };
+    } else {
+      playBtn.textContent = "Soon";
+      playBtn.style.opacity = "0.5";
+      playBtn.style.cursor = "default";
+    }
+
+    top.appendChild(dot);
+    top.appendChild(name);
+    top.appendChild(favBtn);
+    top.appendChild(playBtn);
 
     const desc = document.createElement("div");
     desc.className = "desc";
     desc.textContent = item.desc;
 
-    inner.appendChild(top);
-    inner.appendChild(desc);
-
-    t.appendChild(inner);
-    return t;
+    tile.appendChild(top);
+    tile.appendChild(desc);
+    return tile;
   }
 
-  async function playItem(item){
-    try{
-      currentKey = item.key;
-      currentUrl = item.url;
-      setActive(currentKey);
-
-      // Clean reset helps some Safari builds
-      player.pause();
-      player.removeAttribute("src");
-      player.load();
-
-      player.src = item.url;
-      player.preload = "auto";
-
-      // Small delay can help iOS after setting src
-      await new Promise(r => setTimeout(r, 60));
-
-      await player.play();
-
-      status.textContent = `Playing: ${item.name}`;
-      nowPlaying.textContent = `Source: ${item.url}`;
-    }catch(e){
-      status.textContent = `Play failed: ${e?.name || "Error"} ${e?.message ? ("— " + e.message) : ""}`;
-      nowPlaying.textContent = "";
+  function renderAll() {
+    // Render favorites
+    favGrid.innerHTML = "";
+    const favItems = ALL_SOURCES.filter(s => favorites.includes(s.key));
+    
+    if (favItems.length > 0 && !favCollapsed) {
+      favoritesSection.classList.remove("hidden");
+      favItems.forEach(s => favGrid.appendChild(makeTile(s, true)));
+    } else if (favItems.length > 0 && favCollapsed) {
+      favoritesSection.classList.remove("hidden");
+      favGrid.innerHTML = "";
+    } else {
+      favoritesSection.classList.add("hidden");
     }
+    
+    favCollapse.textContent = favCollapsed ? "▶" : "▼";
+
+    // Render core
+    coreGrid.innerHTML = "";
+    SOURCES_CORE.forEach(s => coreGrid.appendChild(makeTile(s)));
+
+    // Render extra
+    extraGrid.innerHTML = "";
+    SOURCES_EXTRA.forEach(s => extraGrid.appendChild(makeTile(s)));
+    
+    setActive(currentKey);
   }
 
-  PURE.forEach(s => pureGrid.appendChild(tile(s)));
-  BLENDS.forEach(s => blendGrid.appendChild(tile(s)));
-
-  modeSel.onchange = () => {
-    const mode = modeSel.value;
-    const showPure = (mode === "all" || mode === "pure");
-    const showBlend = (mode === "all" || mode === "blends");
-    pureTitle.style.display = showPure ? "" : "none";
-    pureGrid.style.display = showPure ? "grid" : "none";
-    blendTitle.style.display = showBlend ? "" : "none";
-    blendGrid.style.display = showBlend ? "grid" : "none";
+  favCollapse.onclick = () => {
+    favCollapsed = !favCollapsed;
+    renderAll();
   };
 
-  stopBtn.onclick = () => {
-    player.pause();
-    status.textContent = "Stopped.";
-  };
+  // Timer logic
+  let setHours = 0;
+  let setMins = 0;
+  let endTime = null;
+  let timerInterval = null;
 
-  replayBtn.onclick = async () => {
-    if (!currentUrl) return;
-    try{
-      player.currentTime = 0;
-      await player.play();
-      status.textContent = "Replaying.";
-    }catch(e){
-      status.textContent = `Replay failed: ${e?.name || "Error"} ${e?.message ? ("— " + e.message) : ""}`;
+  function formatTime(ms) {
+    if (ms <= 0) return "0:00";
+    const totalSec = Math.ceil(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) {
+      return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
     }
-  };
-
-  // Optional debug events (helpful when something doesn’t play)
-  ["error","stalled","waiting","pause","playing"].forEach(ev => {
-    player.addEventListener(ev, () => {
-      const err = player.error ? `mediaError=${player.error.code}` : "";
-      debug.textContent = `event=${ev} ${err}`;
-    });
-  });
-
-  // === Sleep Timer ===
-  const hoursEl = document.getElementById("hours");
-  const minsEl = document.getElementById("mins");
-  const timerLabel = document.getElementById("timerLabel");
-  const toggleTimerBtn = document.getElementById("toggleTimer");
-
-  let hours = 0;
-  let mins = 0; // 0,15,30,45
-  let timerId = null;
-  let tickId = null;
-  let endAt = null;
-
-  function clamp(){
-    hours = Math.max(0, Math.min(23, hours));
-    mins = Math.max(0, Math.min(45, mins));
-  }
-  function render(){
-    hoursEl.textContent = String(hours);
-    minsEl.textContent = String(mins);
-    if (!endAt) timerLabel.textContent = "Off";
-  }
-  function totalMs(){
-    return (hours * 60 + mins) * 60 * 1000;
+    return m + ":" + String(s).padStart(2, "0");
   }
 
-  function stopTimer(){
-    if (timerId) clearTimeout(timerId);
-    if (tickId) clearInterval(tickId);
-    timerId = null; tickId = null; endAt = null;
-    toggleTimerBtn.textContent = "Start timer";
-    timerLabel.textContent = "Off";
+  function updateTimerDisplay() {
+    if (!endTime) {
+      timerDisplay.textContent = "0:00";
+      timerDisplay.classList.add("off");
+      return;
+    }
+    const remaining = endTime - Date.now();
+    if (remaining <= 0) {
+      stopTimer(true);
+      return;
+    }
+    timerDisplay.textContent = formatTime(remaining);
+    timerDisplay.classList.remove("off");
   }
 
-  function startTimer(){
-    const ms = totalMs();
-    if (ms <= 0) return;
+  function startTimer() {
+    const totalMs = (setHours * 3600 + setMins * 60) * 1000;
+    if (totalMs <= 0) return;
 
-    endAt = Date.now() + ms;
-    toggleTimerBtn.textContent = "Stop timer";
+    endTime = Date.now() + totalMs;
+    toggleTimerBtn.textContent = "Stop";
+    timerDisplay.classList.remove("off");
+    
+    updateTimerDisplay();
+    timerInterval = setInterval(updateTimerDisplay, 1000);
+  }
 
-    timerId = setTimeout(() => {
+  function stopTimer(finished = false) {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    
+    if (finished) {
       player.pause();
-      status.textContent = "Timer finished: playback stopped.";
-      stopTimer();
-    }, ms);
-
-    tickId = setInterval(() => {
-      const left = Math.max(0, endAt - Date.now());
-      const totalM = Math.ceil(left / 60000);
-      const h = Math.floor(totalM / 60);
-      const m = totalM % 60;
-      timerLabel.textContent = `${h}h ${m}m`;
-      if (left <= 0) stopTimer();
-    }, 1000);
+      currentKey = null;
+      nowPlayingTrack.textContent = "Timer finished";
+      setActive(null);
+    }
+    
+    endTime = null;
+    toggleTimerBtn.textContent = "Start";
+    timerDisplay.textContent = "0:00";
+    timerDisplay.classList.add("off");
   }
 
   toggleTimerBtn.onclick = () => {
-    if (timerId) stopTimer();
-    else startTimer();
+    if (endTime) {
+      stopTimer(false);
+    } else {
+      startTimer();
+    }
   };
 
-  document.getElementById("hMinus").onclick = () => { hours--; clamp(); render(); };
-  document.getElementById("hPlus").onclick  = () => { hours++; clamp(); render(); };
-  document.getElementById("mMinus").onclick = () => { mins -= 15; clamp(); render(); };
-  document.getElementById("mPlus").onclick  = () => { mins += 15; clamp(); render(); };
+  document.getElementById("hMinus").onclick = () => { 
+    setHours = Math.max(0, setHours - 1); 
+    hoursEl.textContent = setHours; 
+  };
+  document.getElementById("hPlus").onclick = () => { 
+    setHours = Math.min(12, setHours + 1); 
+    hoursEl.textContent = setHours; 
+  };
+  document.getElementById("mMinus").onclick = () => { 
+    setMins = setMins - 15;
+    if (setMins < 0) setMins = 45;
+    minsEl.textContent = setMins; 
+  };
+  document.getElementById("mPlus").onclick = () => { 
+    setMins = setMins + 15;
+    if (setMins > 45) setMins = 0;
+    minsEl.textContent = setMins; 
+  };
 
-  render();
+  // Initial render
+  renderAll();
 })();
 </script>
 </body>
