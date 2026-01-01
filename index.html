@@ -184,23 +184,37 @@
     .stickyFavorites .grid {
       max-width: 800px;
       margin: 0 auto;
-    }
-    .stickyFavorites .grid {
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
     }
-    .stickyFavorites .tile {
-      padding: 8px 10px;
+    
+    /* Compact favorite tiles - just clickable buttons */
+    .favTile {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .stickyFavorites .desc {
-      display: none;
+    .favTile:hover {
+      background: rgba(255,255,255,0.12);
     }
-    .stickyFavorites .name {
-      font-size: 13px;
+    .favTile.active {
+      background: rgba(120,180,255,0.25);
+      border-color: rgba(120,180,255,0.5);
     }
-    .stickyFavorites .colorDot {
+    .favTile .colorDot {
       width: 10px;
       height: 10px;
+    }
+    .favTile .name {
+      font-size: 13px;
+      font-weight: 600;
     }
     
     /* Scrollable content - padding for fixed header */
@@ -317,7 +331,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.5.9</span>
+          <span class="version">v1.6.0</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -706,12 +720,65 @@
       b.classList.toggle("active", favorites.includes(b.dataset.key));
       b.textContent = favorites.includes(b.dataset.key) ? "★" : "☆";
     });
+    
+    document.querySelectorAll(".favTile").forEach(t => {
+      t.classList.toggle("active", t.dataset.key === key);
+    });
   }
 
   function makeTile(item, compact = false) {
     const tile = document.createElement("div");
-    tile.className = "tile";
+    tile.className = "tile" + (compact ? " compact-fav" : "");
+    
+    // Compact favorites: just a clickable button with dot + name
+    if (compact) {
+      tile.className = "favTile" + (currentKey === item.key ? " active" : "");
+      tile.dataset.key = item.key;
+      
+      const dot = document.createElement("span");
+      dot.className = "colorDot";
+      dot.style.backgroundColor = item.color;
+      dot.style.color = item.color;
+      
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = item.name;
+      
+      tile.appendChild(dot);
+      tile.appendChild(name);
+      
+      if (item.url) {
+        tile.onclick = () => {
+          if (currentKey === item.key && !player.paused) {
+            player.pause();
+            currentKey = null;
+            nowPlayingTrack.textContent = "Select a sound";
+            setActive(null);
+            return;
+          }
 
+          currentKey = item.key;
+          setActive(currentKey);
+          nowPlayingTrack.textContent = "Loading...";
+
+          player.src = item.url;
+          player.load();
+          
+          const playPromise = player.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              nowPlayingTrack.textContent = item.name;
+            }).catch(e => {
+              nowPlayingTrack.textContent = item.name + " (tap ▶)";
+            });
+          }
+        };
+      }
+      
+      return tile;
+    }
+
+    // Full tile for main sections
     const top = document.createElement("div");
     top.className = "tileTop";
 
@@ -779,12 +846,10 @@
 
     tile.appendChild(top);
     
-    if (!compact) {
-      const desc = document.createElement("div");
-      desc.className = "desc";
-      desc.textContent = item.desc;
-      tile.appendChild(desc);
-    }
+    const desc = document.createElement("div");
+    desc.className = "desc";
+    desc.textContent = item.desc;
+    tile.appendChild(desc);
     
     return tile;
   }
