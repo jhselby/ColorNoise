@@ -566,6 +566,12 @@
       min-width: 48px;
       text-align: right;
     }
+    .reloadIndicator {
+      color: #f39c12;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -578,15 +584,15 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.10.5</span>
+          <span class="version">v1.10.9</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
           <span class="dot checking"></span>Sound engine: initializing...
         </div>
+      </div>
       <div class="headerRight">
         <button class="settingsBtn" id="settingsBtn" title="Settings" aria-label="Settings">⚙︎</button>
-      </div>
       </div>
     </div>
     
@@ -699,21 +705,11 @@
         </div>
 
         <div class="settingRow">
-          <div class="settingLabel">Normalize track loudness</div>
+          <div class="settingLabel">Normalize track loudness <span class="reloadIndicator hidden" id="reloadIndicator">(reload required)</span></div>
           <label class="switch">
             <input type="checkbox" id="enableNormalize">
             <span class="slider"></span>
           </label>
-        </div>
-
-        <div class="settingRow">
-          <div class="settingLabel">Per-track volume adjustment</div>
-          <div class="settingControl">
-            <button class="miniCtlBtn" id="trimDown" title="Decrease trim">−</button>
-            <div class="settingValue" id="trimVal">0 dB</div>
-            <button class="miniCtlBtn" id="trimUp" title="Increase trim">+</button>
-            <button class="miniCtlBtn" id="trimReset" title="Reset trim">↺</button>
-          </div>
         </div>
 
         <div class="settingRow">
@@ -1221,10 +1217,6 @@
   const showMainVolumeEl = document.getElementById("showMainVolume");
   const enableNormalizeEl = document.getElementById("enableNormalize");
   const showPerTrackPanelEl = document.getElementById("showPerTrackPanel");
-  const trimDownEl = document.getElementById("trimDown");
-  const trimUpEl = document.getElementById("trimUp");
-  const trimResetEl = document.getElementById("trimReset");
-  const trimValEl = document.getElementById("trimVal");
 
   const mainVolRow = document.getElementById("mainVolRow");
   const mainMasterVolEl = document.getElementById("mainMasterVol");
@@ -1466,7 +1458,6 @@
         const pr = newP.play();
         if (pr !== undefined) await pr;
         setNowPlaying(item.name);
-      setMediaSession(item.name);
         setMediaSession(item.name);
       } catch (e) {
         setNowPlaying(item.name + " (tap ▶)");
@@ -1834,9 +1825,20 @@
     saveSettings();
   }
   }
+  
+  // Track if settings changes require a reload (deferred until settings panel closes)
+  let pendingReload = false;
+  
   function closeSettings() {
     settingsOverlay.classList.add("hidden");
     settingsOverlay.setAttribute("aria-hidden", "true");
+    
+    // If normalization settings changed, reload now
+    if (pendingReload) {
+      pendingReload = false;
+      try { sessionStorage.setItem("colorNoiseDidReloadForNormalize", "1"); } catch {}
+      window.location.reload();
+    }
   }
   if (settingsBtn) settingsBtn.onclick = () => openSettings();
   if (settingsClose) settingsClose.onclick = () => closeSettings();
@@ -1871,10 +1873,6 @@
     if (showMainVolumeEl) showMainVolumeEl.checked = !!settings.showMainVolume;
     if (enableNormalizeEl) enableNormalizeEl.checked = !!settings.enableNormalize;
     if (showPerTrackPanelEl) showPerTrackPanelEl.checked = !!settings.showPerTrackPanel;
-
-    // Current track trim display
-    const db = getTrimDb(currentKey);
-    if (trimValEl) trimValEl.textContent = `${db.toFixed(0)} dB`;
   }
 
   function applyMasterVol() {
@@ -1934,60 +1932,51 @@
   applyPerTrackVisibility();
     };
   }
+  
+  const reloadIndicator = document.getElementById("reloadIndicator");
+  function updateReloadIndicator() {
+    if (reloadIndicator) {
+      if (pendingReload) reloadIndicator.classList.remove("hidden");
+      else reloadIndicator.classList.add("hidden");
+    }
+  }
+  
   if (showPerTrackPanelEl) {
     showPerTrackPanelEl.onchange = () => {
       settings.showPerTrackPanel = showPerTrackPanelEl.checked;
+      
+      // If enabling sound-specific controls, also enable normalization
+      if (settings.showPerTrackPanel && !settings.enableNormalize) {
+        settings.enableNormalize = true;
+        if (enableNormalizeEl) enableNormalizeEl.checked = true;
+        // Normalization change requires reload (deferred to settings close)
+        pendingReload = true;
+        updateReloadIndicator();
+      }
+      
       saveSettings();
       applyPerTrackVisibility();
     };
   }
 
-
-
   if (enableNormalizeEl) {
     enableNormalizeEl.onchange = async () => {
       settings.enableNormalize = enableNormalizeEl.checked;
+      
+      // If disabling normalization, also disable sound-specific controls (they're useless without it)
+      if (!settings.enableNormalize && settings.showPerTrackPanel) {
+        settings.showPerTrackPanel = false;
+        if (showPerTrackPanelEl) showPerTrackPanelEl.checked = false;
+      }
+      
       saveSettings();
+      applyPerTrackVisibility();
 
-      // Changing normalization re-wires the WebAudio graph; a reload is the most reliable way
-      // to ensure consistent behavior across browsers.
-      try { sessionStorage.setItem("colorNoiseDidReloadForNormalize", "1"); } catch {}
-      window.location.reload();
+      // Changing normalization re-wires the WebAudio graph; reload deferred to settings close
+      pendingReload = true;
+      updateReloadIndicator();
     };
   }
-
-  function refreshTrimUI() {
-    const db = getTrimDb(currentKey);
-    if (trimValEl) trimValEl.textContent = `${db.toFixed(0)} dB`;
-  }
-
-  if (trimDownEl) trimDownEl.onclick = () => {
-    if (!currentKey) return;
-    setTrimDb(currentKey, getTrimDb(currentKey) - 1);
-    // Apply immediately to active player if this track is playing
-    if (!activePlayer().paused && currentKey) {
-      if (settings.enableNormalize && trimGains[activeIdx]) trimGains[activeIdx].gain.value = dbToGain(getTrimDb(currentKey));
-    }
-    refreshTrimUI();
-  };
-
-  if (trimUpEl) trimUpEl.onclick = () => {
-    if (!currentKey) return;
-    setTrimDb(currentKey, getTrimDb(currentKey) + 1);
-    if (!activePlayer().paused && currentKey) {
-      if (settings.enableNormalize && trimGains[activeIdx]) trimGains[activeIdx].gain.value = dbToGain(getTrimDb(currentKey));
-    }
-    refreshTrimUI();
-  };
-
-  if (trimResetEl) trimResetEl.onclick = () => {
-    if (!currentKey) return;
-    setTrimDb(currentKey, 0);
-    if (!activePlayer().paused && currentKey) {
-      if (settings.enableNormalize && trimGains[activeIdx]) trimGains[activeIdx].gain.value = 1;
-    }
-    refreshTrimUI();
-  };
 
   if (showSleepTimerEl) {
     showSleepTimerEl.onchange = () => {
@@ -1996,7 +1985,6 @@
       applySleepTimerVisibility();
     };
   }
-
 
   if (mainMasterVolEl) {
     mainMasterVolEl.oninput = () => {
@@ -2009,7 +1997,6 @@
     };
   }
 
-
   function refreshTrimUI() {
     if (!mainTrimValEl) return;
     const db = getTrimDb(currentKey);
@@ -2017,7 +2004,6 @@
   }
 
   function applyCurrentTrimToActive() {
-
     if (IS_IOS) {
       if (!currentKey) return;
       applyPerTrackToElement(activePlayer(), currentKey);
