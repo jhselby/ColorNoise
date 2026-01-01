@@ -297,17 +297,18 @@
 </head>
 
 <body>
+
   <!-- Fixed header with player and timer -->
   <div class="fixedHeader">
     <div class="headerTop">
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.5.5</span>
+          <span class="version">v1.5.6</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
-          <span class="dot checking"></span>Internet Archive: checking...
+          <span class="dot checking"></span>Sound engine: initializing...
         </div>
       </div>
     </div>
@@ -382,7 +383,8 @@
     red: "#cd5c5c",
     purple: "#9b59b6",
     orange: "#e67e22",
-    gray: "#95a5a6"
+    gray: "#95a5a6",
+    cyan: "#00bcd4"
   };
 
   const SOURCES_CORE = [
@@ -493,6 +495,27 @@
       color: COLORS.green,
       desc: "Mountain stream — nature's green noise. 1 hour.",
       url: "https://archive.org/download/10-hours-white-noise-river-mountain-stream-doubled-320/1%20Hour%20Calming%20Mountain%20Stream.mp3"
+    },
+    {
+      key: "alpha_brown",
+      name: "Alpha + Brown Noise",
+      color: COLORS.purple,
+      desc: "Alpha waves blended with brown noise. 1 hour.",
+      url: "https://archive.org/download/10-hours-alpha-river-and-brown-noise-flac/1%20hour%20alpha%20river%20and%20brown%20noise%20v1%20flac.mp3"
+    },
+    {
+      key: "turquoise_stream",
+      name: "Turquoise Mountain Stream",
+      color: COLORS.cyan,
+      desc: "Calming turquoise water, mountain stream. 10 hours.",
+      url: "https://archive.org/download/10-hours-alpha-river-and-brown-noise-flac/10%20hours%20Calming%20Turquoise%20Water%2C%20Mountain%20Stream%20vbr.mp3"
+    },
+    {
+      key: "hot_tub",
+      name: "Hot Tub / Jacuzzi",
+      color: COLORS.cyan,
+      desc: "Smooth hot tub bubbling. 1 hour.",
+      url: "https://archive.org/download/10-hours-alpha-river-and-brown-noise-flac/1%20hour%20smooth%20hot%20tub%20128.mp3"
     }
   ];
 
@@ -517,6 +540,48 @@
       color: COLORS.purple,
       desc: "Deepest relaxation and sleep. Use headphones. 1 hour.",
       url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Delta%20Waves%20%280.5%20Hz%20Binaural%20Beats%29%20%201H.mp3"
+    },
+    {
+      key: "gamma_40hz",
+      name: "Gamma (40 Hz) - Peak Focus",
+      color: COLORS.purple,
+      desc: "40 Hz gamma for focus, calmness, happiness. Use headphones. 1 hour.",
+      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Gamma%20Brain%20Waves%20Meditation%2040%20Hz%20frequency%201%20Hr%20Producing%20Focus%20Calmness%20Happiness.mp3"
+    },
+    {
+      key: "anxiety_relief",
+      name: "Anxiety Relief",
+      color: COLORS.purple,
+      desc: "Release stress, worry, overthinking. Use headphones. 1 hour.",
+      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Anxiety%20Relief%20%20Release%20Stress%20Worry%20Overthinking%20%20Binaural%20Beats%20%20Meditation%20Music.mp3"
+    },
+    {
+      key: "stay_awake",
+      name: "Stay Awake - Isochronic",
+      color: COLORS.purple,
+      desc: "Isochronic tones for staying awake and alert. 30 min.",
+      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Staying%20Awake%20%20Isochronic%20Tones%20%20Brainwave%20Entrainment%20Meditation.mp3"
+    },
+    {
+      key: "beta_30hz",
+      name: "Beta (30 Hz) - Alertness",
+      color: COLORS.purple,
+      desc: "Pure 30 Hz beta binaural for alertness. Use headphones. 30 min.",
+      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/30%20Hz%20Pure%20BINAURAL%20Beat%20%20BETA%20Waves%2070Hz%20Base%20Frequency%20%20Ondas%20Beta%20100.mp3"
+    },
+    {
+      key: "deep_alpha_15min",
+      name: "Deep Alpha - Quick",
+      color: COLORS.purple,
+      desc: "Deep alpha binaural meditation. Use headphones. 15 min.",
+      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Deep%20Alpha%20Binaural%20Beats%2015%20min%20Meditation.mp3"
+    },
+    {
+      key: "theta_432hz",
+      name: "Theta + 432 Hz - DMT",
+      color: COLORS.purple,
+      desc: "Theta brainwaves with 432 Hz and 60 Hz. Use headphones. 1 hour.",
+      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Theta%20Brainwaves%20%20432hz%20%208hz%20%2060hz%20%20%20Pineal%20Gland%20DMT%20Music.mp3"
     }
   ];
 
@@ -555,6 +620,27 @@
       color: COLORS.white,
       desc: "Strong box fan. Classic sleep sound. 10 hours.",
       url: "https://archive.org/download/relaxingsounds/FAN%201%2010h%20Strong%20Box%20Fan.mp3"
+    },
+    {
+      key: "rain_tent",
+      name: "Rain on Tent Canvas",
+      color: COLORS.gray,
+      desc: "Light rain on tent canvas. Medium/gentle, no thunder. 10 hours.",
+      url: "https://archive.org/download/relaxingsounds/Rain%206%20%28Light%29%2010h%20on%20Tent%20Canvas%2C%28MediumGentle%29-no%20thunder.mp3"
+    },
+    {
+      key: "oscillating_fan",
+      name: "Oscillating Fan",
+      color: COLORS.white,
+      desc: "Gentle oscillating fan. 10 hours.",
+      url: "https://archive.org/download/relaxingsounds/FAN%202%2010h%20Gentle%2COscillating%20Fan.mp3"
+    },
+    {
+      key: "rainforest",
+      name: "Rainforest",
+      color: COLORS.green,
+      desc: "Bubbling river, falls, birds, insects, animals. South America. 5 hours.",
+      url: "https://archive.org/download/relaxingsounds/Rainforest%205h%20Bubbling%20River%20Falls(gentle)%2CBirds%2CInsects%2CAnimals-Daytime%2CSouth%20America.mp3"
     }
   ];
 
@@ -848,7 +934,7 @@
   // Initial render
   renderAll();
 
-  // Check Internet Archive status
+  // Check sound engine status (Internet Archive)
   (async function checkArchiveStatus() {
     const statusEl = document.getElementById("sourceStatus");
     const testUrl = "https://archive.org/download/1-hour-brown-noise-and-flowing-water-320/1%20hour%20Brown%20Noise%20and%20Flowing%20River%20flac.mp3";
@@ -864,9 +950,9 @@
       });
       
       clearTimeout(timeout);
-      statusEl.innerHTML = '<span class="dot up"></span>Internet Archive: online';
+      statusEl.innerHTML = '<span class="dot up"></span>Sound engine: operational';
     } catch (e) {
-      statusEl.innerHTML = '<span class="dot down"></span>Internet Archive: offline';
+      statusEl.innerHTML = '<span class="dot down"></span>Sound engine: offline';
     }
   })();
 })();
