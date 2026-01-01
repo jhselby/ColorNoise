@@ -584,7 +584,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.10.9</span>
+          <span class="version">v1.10.10</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -1876,7 +1876,13 @@
   }
 
   function applyMasterVol() {
+    // WebAudio path (desktop)
     if (masterGain) masterGain.gain.value = settings.masterVol;
+    
+    // iOS path: update active player's volume directly
+    if (IS_IOS && currentKey) {
+      applyPerTrackToElement(activePlayer(), currentKey);
+    }
   }
 
   function applySleepTimerVisibility() {
@@ -1898,8 +1904,10 @@
 
   function applyPerTrackVisibility() {
     if (!perTrackRow) return;
-    // Only show when normalization is enabled and a sound is selected
-    const shouldShow = !!settings.enableNormalize && !!settings.showPerTrackPanel && !!currentKey;
+    // On iOS, per-track adjustments work via player.volume even without WebAudio normalization
+    // On desktop, they require the WebAudio normalization graph
+    const normalizeOk = IS_IOS || !!settings.enableNormalize;
+    const shouldShow = normalizeOk && !!settings.showPerTrackPanel && !!currentKey;
     if (shouldShow) perTrackRow.classList.remove("hidden");
     else perTrackRow.classList.add("hidden");
     updateLayout();
@@ -2034,7 +2042,7 @@
   if (mainTrimResetEl) mainTrimResetEl.onclick = () => {
     if (!currentKey) return;
     setTrimDb(currentKey, 0);
-    if (!activePlayer().paused && trimGains && trimGains[activeIdx]) trimGains[activeIdx].gain.value = 1;
+    applyCurrentTrimToActive();
     refreshTrimUI();
   };
 
