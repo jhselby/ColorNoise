@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ColorNoise v1.6.2</title>
+  <title>ColorNoise v1.6.3</title>
 
   <!-- Cache control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -336,7 +336,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.6.2</span>
+          <span class="version">v1.6.3</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -705,7 +705,7 @@
   
   // Load state from localStorage
   let favorites = JSON.parse(localStorage.getItem('colorNoiseFavorites') || '[]');
-  let collapsedSections = JSON.parse(localStorage.getItem('colorNoiseCollapsed') || '{}');
+  let collapsedSections = JSON.parse(localStorage.getItem('colorNoiseCollapsed') || '{"core":true,"blends":true,"binaural":true,"nature":true,"mechanical":true}');
   
   const player = document.getElementById("player");
   const nowPlayingTrack = document.getElementById("nowPlayingTrack");
