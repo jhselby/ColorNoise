@@ -31,10 +31,12 @@
     
     /* Fixed header with player and timer */
     .fixedHeader {
-      position: sticky;
+      position: fixed;
       top: 0;
+      left: 0;
+      right: 0;
       z-index: 100;
-      background: rgba(11, 15, 24, 0.95);
+      background: rgba(11, 15, 24, 0.98);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(255,255,255,0.1);
       padding: 12px 16px;
@@ -162,19 +164,26 @@
     }
     .timerStartBtn:active { background: rgba(255,255,255,0.2); }
     
-    /* Sticky favorites panel */
+    /* Fixed favorites panel - always visible below header */
     .stickyFavorites {
-      position: sticky;
-      top: 140px; /* below header */
-      z-index: 50;
-      background: rgba(11, 15, 24, 0.95);
-      backdrop-filter: blur(12px);
+      position: fixed;
+      top: 175px; /* below header - will be set by JS */
+      left: 0;
+      right: 0;
+      z-index: 90;
+      background: #0b0f18;
       border-bottom: 1px solid rgba(255,255,255,0.1);
       padding: 12px 16px;
-      margin: 0 -16px;
     }
     .stickyFavorites .sectionTitle {
       margin-top: 0;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .stickyFavorites .grid {
+      max-width: 800px;
+      margin: 0 auto;
     }
     .stickyFavorites .grid {
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -194,11 +203,15 @@
       height: 10px;
     }
     
-    /* Scrollable content */
+    /* Scrollable content - padding for fixed header */
     .content {
       padding: 16px;
+      padding-top: 190px; /* space for fixed header */
       max-width: 800px;
       margin: 0 auto;
+    }
+    .content.with-favorites {
+      padding-top: 280px; /* extra space when favorites visible */
     }
     
     .sectionTitle {
@@ -304,7 +317,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.5.6</span>
+          <span class="version">v1.5.9</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -335,17 +348,17 @@
     </div>
   </div>
 
+  <!-- Sticky favorites - outside content for proper sticky behavior -->
+  <div id="favoritesSection" class="stickyFavorites hidden">
+    <div class="sectionTitle" id="favHeader">
+      <span class="collapseBtn">▼</span>
+      ★ Favorites
+    </div>
+    <div class="grid" id="favGrid"></div>
+  </div>
+
   <!-- Scrollable stations -->
   <div class="content">
-    <!-- Sticky favorites -->
-    <div id="favoritesSection" class="stickyFavorites hidden">
-      <div class="sectionTitle" id="favHeader">
-        <span class="collapseBtn">▼</span>
-        ★ Favorites
-      </div>
-      <div class="grid" id="favGrid"></div>
-    </div>
-    
     <div class="sectionTitle" data-section="core">
       <span class="collapseBtn">▼</span>
       Core Colors
@@ -822,6 +835,28 @@
     });
     
     setActive(currentKey);
+    
+    // Position favorites below header and adjust content padding
+    updateLayout();
+  }
+  
+  function updateLayout() {
+    const header = document.querySelector('.fixedHeader');
+    const content = document.querySelector('.content');
+    const headerHeight = header.offsetHeight;
+    
+    if (favoritesSection.classList.contains('hidden')) {
+      content.classList.remove('with-favorites');
+      content.style.paddingTop = (headerHeight + 16) + 'px';
+    } else {
+      favoritesSection.style.top = headerHeight + 'px';
+      content.classList.add('with-favorites');
+      // Wait for favorites to render, then measure
+      requestAnimationFrame(() => {
+        const favHeight = favoritesSection.offsetHeight;
+        content.style.paddingTop = (headerHeight + favHeight + 16) + 'px';
+      });
+    }
   }
 
   // Section collapse handlers
