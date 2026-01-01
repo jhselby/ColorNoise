@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Color Noise</title>
+  <title>ColorNoise v1.6.2</title>
 
   <!-- Cache control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -402,6 +402,12 @@
       Nature Sounds
     </div>
     <div class="grid" id="natureGrid"></div>
+    
+    <div class="sectionTitle" data-section="mechanical">
+      <span class="collapseBtn">▼</span>
+      🚀 Mechanical / Sci-Fi
+    </div>
+    <div class="grid" id="mechanicalGrid"></div>
   </div>
 
 <script>
@@ -452,8 +458,8 @@
       key: "green_pure",
       name: "Green (Pure)",
       color: COLORS.green,
-      desc: "Coming soon — pure green noise source being sourced.",
-      url: null
+      desc: "Mid-frequency, nature-like. Stress and anxiety relief. 4 hours.",
+      url: "https://archive.org/download/green-noise/Green%20Noise.mp3"
     },
     {
       key: "red",
@@ -685,7 +691,17 @@
     }
   ];
 
-  const ALL_SOURCES = [...SOURCES_CORE, ...SOURCES_BLENDS, ...SOURCES_BINAURAL, ...SOURCES_NATURE];
+  const SOURCES_MECHANICAL = [
+    {
+      key: "starship_engine",
+      name: "Starship Engine",
+      color: COLORS.blue,
+      desc: "Star Trek TNG warp engine ambient drone. Sleep in space. 24 hours.",
+      url: "https://archive.org/download/AmbientEngineNoiseidlingFor24Hrs_614/AmbientEngineNoiseidlingFor24Hrs.mp3"
+    }
+  ];
+
+  const ALL_SOURCES = [...SOURCES_CORE, ...SOURCES_BLENDS, ...SOURCES_BINAURAL, ...SOURCES_NATURE, ...SOURCES_MECHANICAL];
   
   // Load state from localStorage
   let favorites = JSON.parse(localStorage.getItem('colorNoiseFavorites') || '[]');
@@ -907,6 +923,7 @@
     renderSection("blendsGrid", SOURCES_BLENDS);
     renderSection("binauralGrid", SOURCES_BINAURAL);
     renderSection("natureGrid", SOURCES_NATURE);
+    renderSection("mechanicalGrid", SOURCES_MECHANICAL);
     
     // Apply collapsed state
     document.querySelectorAll(".sectionTitle[data-section]").forEach(header => {
