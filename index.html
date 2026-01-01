@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ColorNoise v1.10.4.1</title>
+  <title>ColorNoise v1.10.5.1</title>
 
   <!-- Cache control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -578,7 +578,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.10.4</span>
+          <span class="version">v1.10.5</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -715,16 +715,6 @@
             <button class="miniCtlBtn" id="trimReset" title="Reset trim">↺</button>
           </div>
         </div>
-        
-        <div class="settingRow">
-          <div class="settingLabel">iPhone lock-screen playback mode</div>
-          <div class="settingHint">Prevents silent playback when the phone locks/minimizes (iOS WebAudio limitation).</div>
-          <label class="switch">
-            <input type="checkbox" id="iosBackgroundMode">
-            <span class="slider"></span>
-          </label>
-        </div>
-
 
         <div class="settingRow">
           <div class="settingLabel">Show sound-specific controls</div>
@@ -1132,7 +1122,6 @@
       fadeOutSec: 2.0,
       masterVol: 1.0,
       showSleepTimer: true,
-      iosBackgroundMode: true,
       showMainVolume: true,
       enableNormalize: true
     };
@@ -1144,13 +1133,26 @@
     }
   })();
 
-  // Per-track trim
-  // iOS often suspends WebAudio while locked/backgrounded, causing silent playback.
-  // Force lock-screen mode ON on iPhone/iPad to keep audio audible when the device locks.
-  const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  if (IS_IOS) settings.iosBackgroundMode = true;
 
- (dB) storage for loudness normalization
+  // iOS background/lock-screen: WebAudio often gets suspended, causing silent playback.
+  // We use a simple <audio>-only path on iPhone/iPad to keep sound audible when locked/minimized.
+  const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  function setMediaSession(title) {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      const iconEl = document.querySelector('link[rel~="icon"]');
+      const iconHref = iconEl ? iconEl.href : "";
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title || "Color Noise",
+        artist: "ColorNoise",
+        album: "ColorNoise Feeds",
+        artwork: iconHref ? [{ src: iconHref }] : []
+      });
+    } catch {}
+  }
+
+  // Per-track trim (dB) storage for loudness normalization
   let trackTrims = (() => {
     try { return JSON.parse(localStorage.getItem(LS_TRIMS) || "{}"); } catch { return {}; }
   })();
@@ -1170,6 +1172,15 @@
     const v = Math.max(-18, Math.min(18, Number(db)));
     trackTrims[key] = v;
     saveTrackTrims();
+  }
+
+
+  function applyPerTrackToElement(player, key) {
+    try {
+      const base = (settings.masterVol ?? 1);
+      const g = dbToGain(getTrimDb(key));
+      player.volume = Math.max(0, Math.min(1, base * g));
+    } catch {}
   }
 
   function dbToGain(db) {
@@ -1207,7 +1218,6 @@
   const masterVolEl = document.getElementById("masterVol");
   const masterVolVal = document.getElementById("masterVolVal");
   const showSleepTimerEl = document.getElementById("showSleepTimer");
-  const iosBackgroundModeEl = document.getElementById("iosBackgroundMode");
   const showMainVolumeEl = document.getElementById("showMainVolume");
   const enableNormalizeEl = document.getElementById("enableNormalize");
   const showPerTrackPanelEl = document.getElementById("showPerTrackPanel");
@@ -1241,17 +1251,6 @@
   let masterGain = null;
 
   function ensureAudioGraph() {
-
-    // iOS lock-screen/background reliability: bypass WebAudio output path when enabled.
-    if (settings.iosBackgroundMode) {
-      // Let <audio> play directly; iOS can continue background media playback this way.
-      try {
-        if (audioCtx && audioCtx.state !== "closed") audioCtx.close();
-      } catch {}
-      audioCtx = null;
-      return;
-    }
-
     if (audioCtx) return;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -1322,21 +1321,6 @@
     if (audioCtx && audioCtx.state === "suspended") {
       audioCtx.resume().catch(() => {});
     }
-  }
-
-
-  function setMediaSession(title) {
-    if (!("mediaSession" in navigator)) return;
-    try {
-      const iconEl = document.querySelector('link[rel~="icon"]');
-      const iconHref = iconEl ? iconEl.href : "";
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: title || "Color Noise",
-        artist: "ColorNoise",
-        album: "ColorNoise Feeds",
-        artwork: iconHref ? [{ src: iconHref }] : []
-      });
-    } catch {}
   }
 
   function setNowPlaying(text) {
@@ -1421,6 +1405,20 @@
 
   // ---- Core playback logic ----
   async function stopPlayback(reasonText = "Select a sound", useFade = false) {
+
+    if (IS_IOS) {
+      const p = activePlayer();
+      try { p.pause(); } catch {}
+      try { p.removeAttribute("src"); p.load(); } catch {}
+      setNowPlaying(reasonText);
+      setActive(null);
+      currentKey = null;
+      persistNowPlaying("", "");
+      applyPerTrackVisibility();
+      refreshTrimUI();
+      return;
+    }
+
     const p = activePlayer();
     ensureAudioGraph();
     resumeAudioContext();
@@ -1442,6 +1440,43 @@
   }
 
   async function playItem(item) {
+
+    if (IS_IOS) {
+      const oldP = players[activeIdx];
+      const newIdx = 1 - activeIdx;
+      const newP = players[newIdx];
+
+      currentKey = item.key;
+      persistNowPlaying(item.key, item.name);
+      setActive(currentKey);
+      setNowPlaying("Loading…");
+
+      try { oldP.pause(); } catch {}
+      try { oldP.removeAttribute("src"); oldP.load(); } catch {}
+
+      newP.classList.remove("hidden");
+      oldP.classList.add("hidden");
+
+      newP.crossOrigin = "anonymous";
+      newP.src = item.url;
+      newP.load();
+      applyPerTrackToElement(newP, item.key);
+
+      try {
+        const pr = newP.play();
+        if (pr !== undefined) await pr;
+        setNowPlaying(item.name);
+      setMediaSession(item.name);
+        setMediaSession(item.name);
+      } catch (e) {
+        setNowPlaying(item.name + " (tap ▶)");
+      }
+
+      activeIdx = newIdx;
+      setActive(currentKey);
+      return;
+    }
+
     if (!item?.url) return;
 
     ensureAudioGraph();
@@ -1486,7 +1521,7 @@
     }
 
     // Switching tracks: stop the old one and start the new one immediately (crossfade if enabled).
-    const doCrossfade = !settings.iosBackgroundMode && settings.enableCrossfade && settings.crossfadeSec > 0;
+    const doCrossfade = settings.enableCrossfade && settings.crossfadeSec > 0;
 
     const oldIdx = activeIdx;
     const newIdx = 1 - activeIdx;
@@ -1508,11 +1543,6 @@
     newP.load();
     newP.src = item.url;
     newP.load();
-    if (settings.iosBackgroundMode) {
-      const g = dbToGain(getTrimDb(item.key));
-      const base = (settings.masterVol ?? 1);
-      try { newP.volume = Math.max(0, Math.min(1, base * g)); } catch {}
-    }
 
     // Initialize gains for the new player
     if (doCrossfade) {
@@ -1528,7 +1558,6 @@
       if (pr !== undefined) await pr;
       newStarted = true;
       setNowPlaying(item.name);
-      setMediaSession(item.name);
     } catch (e) {
       // If autoplay is blocked for any reason, stop the old track anyway and leave the new one ready.
       setNowPlaying(item.name + " (tap ▶)");
@@ -1800,6 +1829,10 @@
     settingsOverlay.classList.remove("hidden");
     settingsOverlay.setAttribute("aria-hidden", "false");
     syncSettingsUI();
+  if (IS_IOS) {
+    settings.enableCrossfade = false;
+    saveSettings();
+  }
   }
   function closeSettings() {
     settingsOverlay.classList.add("hidden");
@@ -1834,7 +1867,6 @@
     if (mainMasterVolVal) mainMasterVolVal.textContent = fmtPct(settings.masterVol);
 
     if (showSleepTimerEl) showSleepTimerEl.checked = !!settings.showSleepTimer;
-    if (iosBackgroundModeEl) iosBackgroundModeEl.checked = !!settings.iosBackgroundMode;
 
     if (showMainVolumeEl) showMainVolumeEl.checked = !!settings.showMainVolume;
     if (enableNormalizeEl) enableNormalizeEl.checked = !!settings.enableNormalize;
@@ -1957,16 +1989,7 @@
     refreshTrimUI();
   };
 
-  
-  if (iosBackgroundModeEl) {
-    iosBackgroundModeEl.onchange = () => {
-      settings.iosBackgroundMode = iosBackgroundModeEl.checked;
-      saveSettings();
-      window.location.reload();
-    };
-  }
-
-if (showSleepTimerEl) {
+  if (showSleepTimerEl) {
     showSleepTimerEl.onchange = () => {
       settings.showSleepTimer = showSleepTimerEl.checked;
       saveSettings();
@@ -1995,13 +2018,9 @@ if (showSleepTimerEl) {
 
   function applyCurrentTrimToActive() {
 
-    if (!currentKey) return;
-
-    if (settings.iosBackgroundMode) {
-      const g = dbToGain(getTrimDb(currentKey));
-      const base = (settings.masterVol ?? 1);
-      const v = Math.max(0, Math.min(1, base * g));
-      try { activePlayer().volume = v; } catch {}
+    if (IS_IOS) {
+      if (!currentKey) return;
+      applyPerTrackToElement(activePlayer(), currentKey);
       return;
     }
 
