@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ColorNoise v1.6.5</title>
+  <title>ColorNoise v1.7.3</title>
 
   <!-- Cache control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -324,6 +324,61 @@
       line-height: 1.4;
     }
     
+
+    
+    /* Favorites edit controls */
+    .favHeaderRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .favHeaderTitle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .favEditBtn {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: rgba(232,238,252,0.85);
+      cursor: pointer;
+      user-select: none;
+    }
+    .favEditBtn:hover { background: rgba(255,255,255,0.12); }
+    .favEditBtn:active { background: rgba(255,255,255,0.18); }
+
+    .favTile .favActions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+    .favTile .miniBtn {
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(0,0,0,0.2);
+      color: rgba(232,238,252,0.9);
+      font-size: 12px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .favTile .miniBtn:hover { background: rgba(255,255,255,0.10); }
+    .favTile .miniBtn:active { background: rgba(255,255,255,0.16); }
+    .favTile.editing { cursor: default; }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -336,7 +391,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.6.5</span>
+          <span class="version">v1.7.3</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -347,7 +402,7 @@
     
     <div class="playerRow">
       <div class="nowPlaying" id="nowPlayingTrack">Select a sound below</div>
-      <audio id="player" controls playsinline preload="auto" loop></audio>
+      <audio id="player" controls playsinline preload="auto" loop crossorigin="anonymous"></audio>
     </div>
     
     <div class="timerRow">
@@ -370,8 +425,13 @@
   <!-- Sticky favorites - outside content for proper sticky behavior -->
   <div id="favoritesSection" class="stickyFavorites hidden">
     <div class="sectionTitle" id="favHeader">
-      <span class="collapseBtn">▼</span>
-      ★ Favorites
+      <div class="favHeaderRow">
+        <span class="favHeaderTitle">
+          <span class="collapseBtn">▼</span>
+          ★ Favorites
+        </span>
+        <span class="favEditBtn" id="favEditBtn">Edit</span>
+      </div>
     </div>
     <div class="grid" id="favGrid"></div>
   </div>
@@ -734,6 +794,8 @@
   // Load state from localStorage
   let favorites = JSON.parse(localStorage.getItem('colorNoiseFavorites') || '[]');
   let collapsedSections = JSON.parse(localStorage.getItem('colorNoiseCollapsed') || '{"core":true,"blends":true,"binaural":true,"nature":true,"mechanical":true}');
+
+  let favoritesEditMode = false;
   
   const player = document.getElementById("player");
   const nowPlayingTrack = document.getElementById("nowPlayingTrack");
@@ -745,6 +807,106 @@
   const minsEl = document.getElementById("mins");
 
   let currentKey = null;
+
+  // Persisted currently-playing (key only). We do NOT auto-play on load; we just restore selection.
+  const LS_LAST_KEY = "colorNoiseLastKey";
+  const LS_LAST_NAME = "colorNoiseLastName";
+
+  function persistNowPlaying(key, name) {
+    try {
+      localStorage.setItem(LS_LAST_KEY, key || "");
+      localStorage.setItem(LS_LAST_NAME, name || "");
+    } catch {}
+  }
+
+  // Better error reporting
+  function describeMediaError(err) {
+    // HTMLMediaElement.error codes: 1=ABORTED, 2=NETWORK, 3=DECODE, 4=SRC_NOT_SUPPORTED
+    const code = err?.code;
+    switch (code) {
+      case 1: return "aborted";
+      case 2: return "network error";
+      case 3: return "decode error";
+      case 4: return "source not supported";
+      default: return "unknown error";
+    }
+  }
+
+  function setNowPlaying(text) {
+    nowPlayingTrack.textContent = text;
+  }
+
+  function stopPlayback(reasonText = "Select a sound") {
+    try { player.pause(); } catch {}
+    currentKey = null;
+    setActive(null);
+    setNowPlaying(reasonText);
+    persistNowPlaying("", "");
+  }
+
+  function playItem(item) {
+    if (!item?.url) return;
+
+    // Toggle: if same track is playing, stop.
+    if (currentKey === item.key && !player.paused) {
+      stopPlayback("Select a sound");
+      return;
+    }
+
+    currentKey = item.key;
+    setActive(currentKey);
+    setNowPlaying("Loading…");
+    persistNowPlaying(item.key, item.name);
+
+    // Reset src to clear previous error states
+    player.src = "";
+    player.load();
+
+    player.src = item.url;
+    player.load();
+
+    const playPromise = player.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        setNowPlaying(item.name);
+      }).catch(() => {
+        // Autoplay/user-gesture restriction
+        setNowPlaying(item.name + " (tap ▶)");
+      });
+    }
+  }
+
+  // Media event instrumentation for clearer feedback
+  player.addEventListener("error", () => {
+    const msg = describeMediaError(player.error);
+    const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim() || "Audio";
+    setNowPlaying(`${lastName} (failed: ${msg})`);
+  });
+
+  player.addEventListener("stalled", () => {
+    const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim() || "Audio";
+    setNowPlaying(`${lastName} (stalled)`);
+  });
+
+  player.addEventListener("waiting", () => {
+    const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim() || "Audio";
+    if (currentKey) setNowPlaying(`${lastName} (buffering…)`);
+  });
+
+  player.addEventListener("playing", () => {
+    const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim();
+    if (lastName) setNowPlaying(lastName);
+  });
+
+  player.addEventListener("pause", () => {
+    // If user pauses via native controls, keep selection but update button label back to Play.
+    document.querySelectorAll(".playBtn").forEach(b => {
+      const isSel = b.dataset.key === currentKey;
+      b.classList.toggle("active", isSel);
+      if (b.textContent !== "Soon") b.textContent = isSel ? "Play" : "Play";
+    });
+  });
+
 
   function saveFavorites() {
     localStorage.setItem('colorNoiseFavorites', JSON.stringify(favorites));
@@ -813,32 +975,25 @@
         tile.appendChild(hpIcon);
       }
       
+
+      // Edit-mode actions (remove only)
+      if (favoritesEditMode) {
+        tile.classList.add("editing");
+
+        const actions = document.createElement("span");
+        actions.className = "favActions";
+
+        const rm = document.createElement("span");
+        rm.className = "miniBtn";
+        rm.textContent = "✕";
+        rm.title = "Remove favorite";
+        rm.onclick = (e) => { e.stopPropagation(); toggleFavorite(item.key); };
+
+        actions.appendChild(rm);
+        tile.appendChild(actions);
+      }
       if (item.url) {
-        tile.onclick = () => {
-          if (currentKey === item.key && !player.paused) {
-            player.pause();
-            currentKey = null;
-            nowPlayingTrack.textContent = "Select a sound";
-            setActive(null);
-            return;
-          }
-
-          currentKey = item.key;
-          setActive(currentKey);
-          nowPlayingTrack.textContent = "Loading...";
-
-          player.src = item.url;
-          player.load();
-          
-          const playPromise = player.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => {
-              nowPlayingTrack.textContent = item.name;
-            }).catch(e => {
-              nowPlayingTrack.textContent = item.name + " (tap ▶)";
-            });
-          }
-        };
+        tile.onclick = () => { if (!favoritesEditMode) playItem(item); };
       }
       
       return tile;
@@ -872,33 +1027,7 @@
     
     if (item.url) {
       playBtn.textContent = currentKey === item.key ? "Playing" : "Play";
-      playBtn.onclick = () => {
-        if (!item.url) return;
-        
-        if (currentKey === item.key && !player.paused) {
-          player.pause();
-          currentKey = null;
-          nowPlayingTrack.textContent = "Select a sound";
-          setActive(null);
-          return;
-        }
-
-        currentKey = item.key;
-        setActive(currentKey);
-        nowPlayingTrack.textContent = "Loading...";
-
-        player.src = item.url;
-        player.load();
-        
-        const playPromise = player.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            nowPlayingTrack.textContent = item.name;
-          }).catch(e => {
-            nowPlayingTrack.textContent = item.name + " (tap ▶)";
-          });
-        }
-      };
+      playBtn.onclick = () => playItem(item);
     } else {
       playBtn.textContent = "Soon";
       playBtn.style.opacity = "0.5";
@@ -934,6 +1063,9 @@
     if (favItems.length > 0) {
       favoritesSection.classList.remove("hidden");
       const favHeader = document.getElementById("favHeader");
+
+      const favEditBtn = document.getElementById("favEditBtn");
+      if (favEditBtn) favEditBtn.textContent = favoritesEditMode ? "Done" : "Edit";
       if (!collapsedSections.favorites) {
         favItems.forEach(s => favGrid.appendChild(makeTile(s, true)));
         favGrid.classList.remove("collapsed");
@@ -943,6 +1075,7 @@
         favHeader.classList.add("collapsed");
       }
     } else {
+      favoritesEditMode = false;
       favoritesSection.classList.add("hidden");
     }
 
@@ -1001,6 +1134,17 @@
     };
   });
   
+
+  // Favorites edit toggle (remove/reorder)
+  const favEditBtnEl = document.getElementById("favEditBtn");
+  if (favEditBtnEl) {
+    favEditBtnEl.onclick = (e) => {
+      e.stopPropagation();
+      favoritesEditMode = !favoritesEditMode;
+      renderAll();
+    };
+  }
+
   document.getElementById("favHeader").onclick = () => {
     collapsedSections.favorites = !collapsedSections.favorites;
     saveCollapsed();
@@ -1010,6 +1154,19 @@
   // Timer logic
   let setHours = 0;
   let setMins = 0;
+
+  function updateSetDurationPreview() {
+    // When timer is not running, show the selected duration (if any) in the timer display.
+    if (endTime) return;
+    const totalMs = (setHours * 3600 + setMins * 60) * 1000;
+    if (totalMs <= 0) {
+      timerDisplay.textContent = "0:00";
+      timerDisplay.classList.add("off");
+      return;
+    }
+    timerDisplay.textContent = formatTime(totalMs);
+    timerDisplay.classList.add("off"); // keep it visually "not running"
+  }
   let endTime = null;
   let timerInterval = null;
 
@@ -1027,8 +1184,7 @@
 
   function updateTimerDisplay() {
     if (!endTime) {
-      timerDisplay.textContent = "0:00";
-      timerDisplay.classList.add("off");
+      updateSetDurationPreview();
       return;
     }
     const remaining = endTime - Date.now();
@@ -1067,8 +1223,7 @@
     
     endTime = null;
     toggleTimerBtn.textContent = "Start";
-    timerDisplay.textContent = "0:00";
-    timerDisplay.classList.add("off");
+    updateSetDurationPreview();
   }
 
   toggleTimerBtn.onclick = () => {
@@ -1082,46 +1237,81 @@
   document.getElementById("hMinus").onclick = () => { 
     setHours = Math.max(0, setHours - 1); 
     hoursEl.textContent = setHours; 
+    updateSetDurationPreview();
   };
   document.getElementById("hPlus").onclick = () => { 
     setHours = Math.min(12, setHours + 1); 
     hoursEl.textContent = setHours; 
+    updateSetDurationPreview();
   };
   document.getElementById("mMinus").onclick = () => { 
     setMins = setMins - 15;
     if (setMins < 0) setMins = 45;
     minsEl.textContent = setMins; 
+    updateSetDurationPreview();
   };
   document.getElementById("mPlus").onclick = () => { 
     setMins = setMins + 15;
     if (setMins > 45) setMins = 0;
     minsEl.textContent = setMins; 
+    updateSetDurationPreview();
   };
+
+  // Initialize timer display preview
+  updateSetDurationPreview();
+
+  // Restore last-selected track (do not autoplay)
+  (function restoreLastSelection() {
+    const lastKey = (localStorage.getItem(LS_LAST_KEY) || "").trim();
+    const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim();
+    if (!lastKey) return;
+    const found = ALL_SOURCES.find(s => s.key === lastKey);
+    if (!found) return;
+    currentKey = lastKey;
+    setActive(currentKey);
+    setNowPlaying((lastName || found.name) + " (ready)");
+  })();
 
   // Initial render
   renderAll();
 
   // Check sound engine status (Internet Archive)
-  (async function checkArchiveStatus() {
+    // Check sound engine status (Internet Archive) — reliable media probe
+  (function checkArchiveStatus() {
     const statusEl = document.getElementById("sourceStatus");
     const testUrl = "https://archive.org/download/1-hour-brown-noise-and-flowing-water-320/1%20hour%20Brown%20Noise%20and%20Flowing%20River%20flac.mp3";
-    
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      
-      const response = await fetch(testUrl, { 
-        method: "HEAD",
-        mode: "no-cors",
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeout);
-      statusEl.innerHTML = '<span class="dot up"></span>Sound engine: operational';
-    } catch (e) {
-      statusEl.innerHTML = '<span class="dot down"></span>Sound engine: offline';
-    }
+
+    // Use a lightweight <audio> probe. This avoids the ambiguity of fetch(..., {mode:"no-cors"}).
+    const probe = new Audio();
+    probe.preload = "metadata";
+    probe.crossOrigin = "anonymous";
+
+    const set = (state, text) => {
+      statusEl.innerHTML = `<span class="dot ${state}"></span>${text}`;
+    };
+
+    set("checking", "Sound engine: checking…");
+
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      try { probe.src = ""; } catch {}
+      if (ok) set("up", "Sound engine: operational");
+      else set("down", "Sound engine: offline (Internet Archive appears down)");
+    };
+
+    const t = setTimeout(() => finish(false), 8000);
+
+    // canplaythrough is strongest, but metadata is enough to confirm reachability.
+    probe.addEventListener("canplaythrough", () => { clearTimeout(t); finish(true); }, { once: true });
+    probe.addEventListener("loadedmetadata", () => { clearTimeout(t); finish(true); }, { once: true });
+    probe.addEventListener("error", () => { clearTimeout(t); finish(false); }, { once: true });
+
+    probe.src = testUrl;
+    probe.load();
   })();
+;
 })();
 </script>
 </body>
