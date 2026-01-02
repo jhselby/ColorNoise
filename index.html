@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.3.2</title>
+  <title>ColorNoise v1.3</title>
 
   <!-- Cache control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -704,7 +704,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.3.2</span>
+          <span class="version">v1.3</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -1235,36 +1235,6 @@
   // Elements
   const playerA = document.getElementById("playerA");
   const playerB = document.getElementById("playerB");
-
-
-  // Fade-out support when user presses the native audio pause button
-  function attachPauseFadeHandler(p) {
-    if (!p) return;
-    p.addEventListener("pause", async () => {
-      if (IS_IOS) return;
-      if (_programmaticPause) return;
-      if (!currentKey) return;
-      if (!settings.enableFadeOnStop || !settings.enableFadeOut || settings.fadeOutSec <= 0) return;
-
-      // Resume (allowed because pause was a user gesture), then perform a proper fade-out stop.
-      try {
-        const pr = p.play();
-        if (pr !== undefined) await pr;
-      } catch {
-        setNowPlaying("Select a sound");
-        setActive(null);
-        currentKey = null;
-        persistNowPlaying("", "");
-        return;
-      }
-
-      await stopPlayback("Select a sound", true);
-    });
-  }
-  attachPauseFadeHandler(playerA);
-  attachPauseFadeHandler(playerB);
-
-  let _programmaticPause = false;
   const players = [playerA, playerB];
 
   const nowPlayingTrack = document.getElementById("nowPlayingTrack");
@@ -1457,42 +1427,11 @@
 
   function fadeOutAndStop(playerEl, gainNode, seconds) {
     return new Promise((resolve) => {
-      const dur = Math.max(0, seconds || 0);
-      if (!audioCtx || !gainNode || dur <= 0) {
-        _programmaticPause = true;
+      if (!audioCtx || !gainNode || seconds <= 0) {
         try { playerEl.pause(); } catch {}
-        _programmaticPause = false;
         resolve();
         return;
       }
-
-      const t0 = audioCtx.currentTime;
-
-      // Smoothly ramp from current value to (near) zero to avoid clicks/pops.
-      if (typeof gainNode.gain.cancelAndHoldAtTime === "function") {
-        gainNode.gain.cancelAndHoldAtTime(t0);
-      } else {
-        gainNode.gain.cancelScheduledValues(t0);
-        gainNode.gain.setValueAtTime(gainNode.gain.value, t0);
-      }
-
-      const nearZero = 0.0001;
-      gainNode.gain.linearRampToValueAtTime(nearZero, t0 + dur);
-      gainNode.gain.setValueAtTime(0, t0 + dur);
-
-      setTimeout(() => {
-        _programmaticPause = true;
-        try { playerEl.pause(); } catch {}
-        _programmaticPause = false;
-
-        // Restore gain after the element is fully stopped (prevents end-click)
-        setTimeout(() => {
-          try { gainNode.gain.value = 1; } catch {}
-          resolve();
-        }, 60);
-      }, Math.ceil(dur * 1000));
-    });
-  }
       const from = gainNode.gain.value;
       rampGain(gainNode, from, 0, seconds);
       setTimeout(() => {
