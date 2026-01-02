@@ -724,6 +724,13 @@
       text-align: right;
     }
     .hidden { display: none !important; }
+    /* Fix theme selector contrast in dark mode */
+[data-theme="dark"] .themeOption {
+  color: rgba(232,238,252,0.85) !important;
+  -webkit-text-fill-color: rgba(232,238,252,0.85) !important; /* Safari/iOS */
+  opacity: 1 !important;
+}
+
   </style>
 </head>
 
