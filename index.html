@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.3.4</title>
+  <title>ColorNoise v1.3</title>
 
   <!-- Cache control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -704,7 +704,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.3.4</span>
+          <span class="version">v1.3</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -899,7 +899,6 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
-  const ASSET_VERSION = "1.3.4";
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1276,7 +1275,6 @@
 
   // Active player index
   let activeIdx = 0;
-  let _programmaticPause = false;
   let currentKey = null;
 
   function activePlayer() { return players[activeIdx]; }
@@ -1429,44 +1427,20 @@
 
   function fadeOutAndStop(playerEl, gainNode, seconds) {
     return new Promise((resolve) => {
-      const dur = Math.max(0, seconds || 0);
-
-      if (!audioCtx || !gainNode || dur <= 0) {
-        _programmaticPause = true;
+      if (!audioCtx || !gainNode || seconds <= 0) {
         try { playerEl.pause(); } catch {}
-        _programmaticPause = false;
         resolve();
         return;
       }
-
-      const t0 = audioCtx.currentTime;
-
-      // Avoid clicks/pops: hold the current gain value, then ramp down smoothly.
-      if (typeof gainNode.gain.cancelAndHoldAtTime === "function") {
-        gainNode.gain.cancelAndHoldAtTime(t0);
-      } else {
-        gainNode.gain.cancelScheduledValues(t0);
-        gainNode.gain.setValueAtTime(gainNode.gain.value, t0);
-      }
-
-      const nearZero = 0.0001;
-      gainNode.gain.linearRampToValueAtTime(nearZero, t0 + dur);
-      gainNode.gain.setValueAtTime(0, t0 + dur);
-
-      // Pause *after* the ramp finishes
+      const from = gainNode.gain.value;
+      rampGain(gainNode, from, 0, seconds);
       setTimeout(() => {
-        _programmaticPause = true;
         try { playerEl.pause(); } catch {}
-        _programmaticPause = false;
-
-        // Restore gain a moment later for future playback
-        setTimeout(() => {
-          try { gainNode.gain.value = 1; } catch {}
-          resolve();
-        }, 60);
-      }, Math.ceil((dur * 1000) + 40));
+        resolve();
+      }, Math.ceil(seconds * 1000));
     });
   }
+
   // ---- Core playback logic ----
   async function stopPlayback(reasonText = "Select a sound", useFade = false) {
 
