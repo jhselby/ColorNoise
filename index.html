@@ -1482,29 +1482,15 @@
         return;
       }
       
-      const t0 = audioCtx.currentTime;
-      const from = gainNode.gain.value;
+      // Use the exact same pattern as crossfade (which works smoothly)
+      rampGain(gainNode, gainNode.gain.value, 0, seconds);
       
-      // Cancel any existing scheduled values
-      gainNode.gain.cancelScheduledValues(t0);
-      gainNode.gain.setValueAtTime(from, t0);
-      
-      // Ramp to near-zero (exponential can't go to exactly 0)
-      // Using linear ramp to a very small value
-      gainNode.gain.linearRampToValueAtTime(0.0001, t0 + seconds);
-      
-      // After the ramp completes, force to true zero and pause
       setTimeout(() => {
-        // Force immediate silence
-        gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        
-        // Wait one more animation frame to ensure the zero is applied
-        requestAnimationFrame(() => {
-          try { playerEl.pause(); } catch {}
-          resolve();
-        });
-      }, Math.ceil(seconds * 1000) + 30);
+        // Clamp to silence and stop - same as crossfade
+        gainNode.gain.value = 0;
+        try { playerEl.pause(); } catch {}
+        resolve();
+      }, Math.ceil(seconds * 1000));
     });
   }
 
