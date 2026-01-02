@@ -2,41 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Color Noise</title>
-
-  <!-- Cache control -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>ColorNoise v1.2</title>
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0b0f18">
 
   <style>
-    :root { color-scheme: dark; }
+    /* Theme CSS Variables */
+    :root {
+      --bg-primary: #0b0f18;
+      --bg-secondary: rgba(11, 15, 24, 0.98);
+      --bg-tertiary: rgba(0,0,0,0.25);
+      --bg-card: rgba(255,255,255,0.06);
+      --bg-card-hover: rgba(255,255,255,0.12);
+      --bg-button: rgba(255,255,255,0.08);
+      --bg-button-hover: rgba(255,255,255,0.12);
+      --bg-button-active: rgba(255,255,255,0.18);
+      --bg-active: rgba(120,180,255,0.25);
+      --border-primary: rgba(255,255,255,0.1);
+      --border-secondary: rgba(255,255,255,0.15);
+      --border-tertiary: rgba(255,255,255,0.18);
+      --border-active: rgba(120,180,255,0.5);
+      --text-primary: #e8eefc;
+      --text-secondary: rgba(232,238,252,0.9);
+      --text-tertiary: rgba(232,238,252,0.6);
+      --text-muted: rgba(232,238,252,0.4);
+      --gradient-bg: radial-gradient(1200px 800px at 20% 10%, rgba(120,120,255,.22), transparent 60%),
+                     radial-gradient(1000px 700px at 80% 90%, rgba(0,255,200,.12), transparent 60%),
+                     linear-gradient(135deg, #0b0f18, #070a10);
+      --switch-bg: rgba(255,255,255,0.18);
+      --switch-knob: rgba(232,238,252,0.92);
+      --switch-checked-bg: rgba(120,180,255,0.35);
+      --overlay-bg: rgba(0,0,0,0.5);
+      --theme-btn-text: rgba(232,238,252,0.6);
+      --theme-btn-text-hover: rgba(232,238,252,0.85);
+      color-scheme: dark;
+    }
+
+    /* Light theme */
+    [data-theme="light"] {
+      --bg-primary: #f5f7fa;
+      --bg-secondary: rgba(255, 255, 255, 0.98);
+      --bg-tertiary: rgba(0,0,0,0.04);
+      --bg-card: rgba(0,0,0,0.03);
+      --bg-card-hover: rgba(0,0,0,0.06);
+      --bg-button: rgba(0,0,0,0.05);
+      --bg-button-hover: rgba(0,0,0,0.08);
+      --bg-button-active: rgba(0,0,0,0.12);
+      --bg-active: rgba(60,120,200,0.15);
+      --border-primary: rgba(0,0,0,0.08);
+      --border-secondary: rgba(0,0,0,0.12);
+      --border-tertiary: rgba(0,0,0,0.15);
+      --border-active: rgba(60,120,200,0.4);
+      --text-primary: #1a1f2e;
+      --text-secondary: rgba(26,31,46,0.85);
+      --text-tertiary: rgba(26,31,46,0.55);
+      --text-muted: rgba(26,31,46,0.35);
+      --gradient-bg: radial-gradient(1200px 800px at 20% 10%, rgba(100,140,255,.12), transparent 60%),
+                     radial-gradient(1000px 700px at 80% 90%, rgba(0,180,140,.08), transparent 60%),
+                     linear-gradient(135deg, #f5f7fa, #e8ecf2);
+      --switch-bg: rgba(0,0,0,0.15);
+      --switch-knob: #fff;
+      --switch-checked-bg: rgba(60,120,200,0.5);
+      --overlay-bg: rgba(0,0,0,0.3);
+      --theme-btn-text: rgba(26,31,46,0.55);
+      --theme-btn-text-hover: rgba(26,31,46,0.75);
+      color-scheme: light;
+    }
+
     * { box-sizing: border-box; }
     body {
       margin: 0; 
       min-height: 100vh;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: radial-gradient(1200px 800px at 20% 10%, rgba(120,120,255,.22), transparent 60%),
-                  radial-gradient(1000px 700px at 80% 90%, rgba(0,255,200,.12), transparent 60%),
-                  linear-gradient(135deg, #0b0f18, #070a10);
+      background: var(--gradient-bg);
       background-attachment: fixed;
-      color: #e8eefc;
+      color: var(--text-primary);
     }
     
     /* Fixed header with player and timer */
     .fixedHeader {
-      position: sticky;
+      position: fixed;
       top: 0;
+      left: 0;
+      right: 0;
       z-index: 100;
-      background: rgba(11, 15, 24, 0.95);
+      background: var(--bg-secondary);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid var(--border-primary);
       padding: 12px 16px;
     }
     
@@ -64,17 +119,17 @@
       font-size: 11px;
       padding: 2px 6px;
       border-radius: 6px;
-      background: rgba(255,255,255,0.1);
-      color: rgba(232,238,252,0.7);
+      background: var(--bg-button);
+      color: var(--text-tertiary);
       margin-left: 6px;
     }
     .byline {
       font-size: 11px;
-      color: rgba(232,238,252,0.6);
+      color: var(--text-tertiary);
     }
     .sourceStatus {
       font-size: 11px;
-      color: rgba(232,238,252,0.6);
+      color: var(--text-tertiary);
     }
     .sourceStatus .dot {
       display: inline-block;
@@ -96,7 +151,7 @@
     }
     .nowPlaying {
       font-size: 14px;
-      color: rgba(232,238,252,0.9);
+      color: var(--text-secondary);
       font-weight: 600;
     }
     audio {
@@ -111,11 +166,11 @@
       gap: 8px;
       margin-top: 8px;
       padding-top: 8px;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid var(--border-primary);
     }
     .timerLabel {
       font-size: 11px;
-      color: rgba(232,238,252,0.6);
+      color: var(--text-tertiary);
     }
     .timerDisplay {
       font-size: 16px;
@@ -132,9 +187,9 @@
     .timerBtn {
       width: 28px; height: 28px;
       border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.1);
-      color: #fff;
+      border: 1px solid var(--border-tertiary);
+      background: var(--bg-button);
+      color: var(--text-primary);
       font-size: 14px;
       font-weight: 700;
       display: grid;
@@ -142,7 +197,7 @@
       cursor: pointer;
       user-select: none;
     }
-    .timerBtn:active { background: rgba(255,255,255,0.2); }
+    .timerBtn:active { background: var(--bg-button-active); }
     .timerNum {
       font-size: 14px;
       font-weight: 700;
@@ -152,53 +207,83 @@
     .timerStartBtn {
       padding: 6px 10px;
       border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.1);
-      color: #e8eefc;
+      border: 1px solid var(--border-tertiary);
+      background: var(--bg-button);
+      color: var(--text-primary);
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       margin-left: auto;
     }
-    .timerStartBtn:active { background: rgba(255,255,255,0.2); }
+    .timerStartBtn:active { background: var(--bg-button-active); }
     
-    /* Sticky favorites panel */
+    /* Fixed favorites panel - always visible below header */
     .stickyFavorites {
-      position: sticky;
-      top: 140px; /* below header */
-      z-index: 50;
-      background: rgba(11, 15, 24, 0.95);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      position: fixed;
+      top: 175px; /* below header - will be set by JS */
+      left: 0;
+      right: 0;
+      z-index: 90;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-primary);
       padding: 12px 16px;
-      margin: 0 -16px;
     }
     .stickyFavorites .sectionTitle {
       margin-top: 0;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .stickyFavorites .grid {
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
     }
-    .stickyFavorites .tile {
-      padding: 8px 10px;
+    
+    /* Compact favorite tiles - just clickable buttons */
+    .favTile {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-secondary);
+      background: var(--bg-button);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .stickyFavorites .desc {
-      display: none;
+    .favTile:hover {
+      background: var(--bg-card-hover);
     }
-    .stickyFavorites .name {
-      font-size: 13px;
+    .favTile.active {
+      background: var(--bg-active);
+      border-color: var(--border-active);
     }
-    .stickyFavorites .colorDot {
+    .favTile .colorDot {
       width: 10px;
       height: 10px;
     }
+    .favTile .name {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .favTile .headphoneIcon {
+      font-size: 10px;
+      opacity: 0.6;
+      margin-left: 2px;
+    }
     
-    /* Scrollable content */
+    /* Scrollable content - padding for fixed header */
     .content {
       padding: 16px;
+      padding-top: 190px; /* space for fixed header */
       max-width: 800px;
       margin: 0 auto;
+    }
+    .content.with-favorites {
+      padding-top: 280px; /* extra space when favorites visible */
     }
     
     .sectionTitle {
@@ -206,7 +291,7 @@
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: rgba(232,238,252,0.6);
+      color: var(--text-tertiary);
       margin: 16px 0 10px;
       display: flex;
       align-items: center;
@@ -215,7 +300,7 @@
       user-select: none;
     }
     .sectionTitle:first-child { margin-top: 0; }
-    .sectionTitle:hover { color: rgba(232,238,252,0.8); }
+    .sectionTitle:hover { color: var(--text-secondary); }
     .collapseBtn {
       font-size: 12px;
       opacity: 0.6;
@@ -243,8 +328,8 @@
     
     .tile {
       border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border-primary);
+      background: var(--bg-tertiary);
       padding: 12px;
     }
     .tileTop {
@@ -273,48 +358,389 @@
     .playBtn {
       padding: 6px 10px;
       border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.08);
-      color: #e8eefc;
+      border: 1px solid var(--border-secondary);
+      background: var(--bg-button);
+      color: var(--text-primary);
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
     }
-    .playBtn:hover { background: rgba(255,255,255,0.12); }
+    .playBtn:hover { background: var(--bg-card-hover); }
     .playBtn.active {
-      background: rgba(120,180,255,0.25);
-      border-color: rgba(120,180,255,0.5);
+      background: var(--bg-active);
+      border-color: var(--border-active);
     }
     .desc {
       font-size: 12px;
-      color: rgba(232,238,252,0.6);
+      color: var(--text-tertiary);
       margin-top: 6px;
       line-height: 1.4;
     }
     
+
+    
+    /* Favorites edit controls */
+    .favHeaderRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .favHeaderTitle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .favEditBtn {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border-tertiary);
+      background: var(--bg-button);
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+    .favEditBtn:hover { background: var(--bg-card-hover); }
+    .favEditBtn:active { background: var(--bg-button-active); }
+
+    .favTile .favActions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+    .favTile .miniBtn {
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      border: 1px solid var(--border-tertiary);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .favTile .miniBtn:hover { background: var(--bg-button); }
+    .favTile .miniBtn:active { background: var(--bg-button-active); }
+    .favTile.editing { cursor: default; }
+
+    
+    /* Settings button */
+    .settingsBtn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 250;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid var(--border-tertiary);
+      background: var(--bg-button);
+      color: var(--text-secondary);
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+    .settingsBtn:hover { background: var(--bg-card-hover); }
+    .settingsBtn:active { background: var(--bg-button-active); }
+
+    /* Settings drawer */
+    .settingsOverlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay-bg);
+      z-index: 200;
+      display: grid;
+      place-items: start center;
+      padding: 12px;
+      padding-top: 50px;
+    }
+    .settingsPanel {
+      width: min(760px, 100%);
+      max-height: calc(100vh - 74px);
+      display: flex;
+      flex-direction: column;
+      border-radius: 18px;
+      border: 1px solid var(--border-secondary);
+      background: var(--bg-secondary);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.45);
+      overflow: hidden;
+    }
+    .settingsHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-primary);
+      flex-shrink: 0;
+    }
+    .settingsTitle {
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .settingsClose {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      border: 1px solid var(--border-tertiary);
+      background: var(--bg-button);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .settingsBody {
+      padding: 14px 16px 16px;
+      display: grid;
+      overflow-y: auto;
+      gap: 12px;
+    }
+    .settingRow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      border: 1px solid var(--border-primary);
+      background: var(--bg-card);
+    }
+    .settingLabel {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+    .settingControl {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 240px;
+      justify-content: flex-end;
+    }
+    .settingControl input[type="range"] {
+      width: 170px;
+    }
+    .settingValue {
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      font-weight: 800;
+      min-width: 56px;
+      text-align: right;
+      color: var(--text-tertiary);
+    }
+    .settingsHint {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      padding: 2px 2px 0;
+    }
+
+    /* Settings section divider */
+    .settingsSectionTitle {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 12px 4px 4px;
+      border-top: 1px solid var(--border-primary);
+      margin-top: 4px;
+    }
+    .settingsSectionTitle:first-child {
+      border-top: none;
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    /* Theme selector */
+    .themeSelector {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      padding: 3px;
+    }
+    .themeOption {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--theme-btn-text);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .themeOption:hover {
+      color: var(--theme-btn-text-hover);
+    }
+    .themeOption.active {
+      background: var(--bg-button);
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    /* Toggle switch */
+    .switch { position: relative; display: inline-block; width: 44px; height: 26px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--switch-bg);
+      border: 1px solid var(--border-tertiary);
+      transition: .2s;
+      border-radius: 999px;
+    }
+    .switch .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      top: 2px;
+      background: var(--switch-knob);
+      transition: .2s;
+      border-radius: 50%;
+    }
+    .switch input:checked + .slider {
+      background: var(--switch-checked-bg);
+      border-color: var(--border-active);
+    }
+    .switch input:checked + .slider:before {
+      transform: translateX(18px);
+    }
+
+
+    .miniCtlBtn {
+      width: 34px;
+      height: 28px;
+      border-radius: 10px;
+      border: 1px solid var(--border-tertiary);
+      background: var(--bg-button);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+    }
+    .miniCtlBtn:hover { background: var(--bg-card-hover); }
+    .miniCtlBtn:active { background: var(--bg-button-active); }
+    .playerEl.hidden { display: none; }
+
+    
+    /* Main-screen master volume */
+    .mainVolRow {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border-primary);
+      background: var(--bg-card);
+    }
+    .mainVolLabel {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-tertiary);
+      min-width: 56px;
+    }
+    #mainMasterVol {
+      flex: 1;
+    }
+    .mainVolVal {
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--text-tertiary);
+      min-width: 48px;
+      text-align: right;
+    }
+    .reloadIndicator {
+      color: #f39c12;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .iosNote {
+      color: #e74c3c;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .settingRow.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
     .hidden { display: none !important; }
+
+    /* Fix theme selector contrast in dark mode */
+    [data-theme="dark"] .themeOption {
+      color: rgba(232,238,252,0.85) !important;
+      -webkit-text-fill-color: rgba(232,238,252,0.85) !important; /* Safari/iOS */
+      opacity: 1 !important;
+    }
   </style>
 </head>
 
 <body>
+
   <!-- Fixed header with player and timer -->
   <div class="fixedHeader">
     <div class="headerTop">
       <div class="headerLeft">
         <div class="logo">
-          <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.5.5</span>
+          <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
+          <span class="version">v1.2</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
-          <span class="dot checking"></span>Internet Archive: checking...
+          <span class="dot checking"></span>Sound engine: initializing...
         </div>
+      </div>
+      <div class="headerRight">
+        <button class="settingsBtn" id="settingsBtn" title="Settings" aria-label="Settings">⚙︎</button>
       </div>
     </div>
     
     <div class="playerRow">
       <div class="nowPlaying" id="nowPlayingTrack">Select a sound below</div>
-      <audio id="player" controls playsinline preload="auto" loop></audio>
+      <audio id="playerA" class="playerEl" controls playsinline preload="auto" loop crossorigin="anonymous"></audio>
+      <audio id="playerB" class="playerEl hidden" controls playsinline preload="auto" loop crossorigin="anonymous"></audio>
+
+      <!-- Master volume (optional) -->
+      <div class="mainVolRow" id="mainVolRow">
+        <div class="mainVolLabel">Volume</div>
+        <input type="range" id="mainMasterVol" min="0" max="1" step="0.01" aria-label="Master volume">
+        <div class="mainVolVal" id="mainMasterVolVal">100%</div>
+      </div>
+
+      <!-- Per-track volume adjustment (shown only when enabled) -->
+      <div class="mainVolRow hidden" id="perTrackRow">
+        <div class="mainVolLabel">Sound-specific normalization</div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+          <button class="miniCtlBtn" id="mainTrimDown" title="Make this sound quieter">−</button>
+          <div class="settingValue" id="mainTrimVal" style="min-width:56px; text-align:center;">0 dB</div>
+          <button class="miniCtlBtn" id="mainTrimUp" title="Make this sound louder">+</button>
+          <button class="miniCtlBtn" id="mainTrimReset" title="Reset this sound">↺</button>
+        </div>
+      </div>
+
+
     </div>
     
     <div class="timerRow">
@@ -334,45 +760,149 @@
     </div>
   </div>
 
-  <!-- Scrollable stations -->
-  <div class="content">
-    <!-- Sticky favorites -->
-    <div id="favoritesSection" class="stickyFavorites hidden">
-      <div class="sectionTitle" id="favHeader">
-        <span class="collapseBtn">▼</span>
-        ★ Favorites
+  <!-- Settings drawer -->
+  <div class="settingsOverlay hidden" id="settingsOverlay" aria-hidden="true">
+    <div class="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="settingsHeader">
+        <div class="settingsTitle">Settings</div>
+        <button class="settingsClose" id="settingsClose" aria-label="Close settings">✕</button>
       </div>
-      <div class="grid" id="favGrid"></div>
+
+      <div class="settingsBody">
+        <!-- Appearance -->
+        <div class="settingsSectionTitle">Appearance</div>
+        
+        <div class="settingRow">
+          <div class="settingLabel">Theme</div>
+          <div class="themeSelector" id="themeSelector" role="radiogroup" aria-label="Theme">
+            <button class="themeOption" data-theme="light" role="radio" aria-checked="false">Light</button>
+            <button class="themeOption" data-theme="dark" role="radio" aria-checked="false">Dark</button>
+            <button class="themeOption" data-theme="system" role="radio" aria-checked="false">System</button>
+          </div>
+        </div>
+
+        <div class="settingRow">
+          <div class="settingLabel">Show sleep timer</div>
+          <label class="switch">
+            <input type="checkbox" id="showSleepTimer">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Playback -->
+        <div class="settingsSectionTitle">Playback</div>
+
+        <div class="settingRow">
+          <div class="settingLabel">Crossfade on track switch</div>
+          <label class="switch">
+            <input type="checkbox" id="enableCrossfade">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="settingRow">
+          <div class="settingLabel">Crossfade duration</div>
+          <div class="settingControl">
+            <input type="range" id="crossfadeSec" min="0" max="6" step="0.5">
+            <div class="settingValue" id="crossfadeSecVal"></div>
+          </div>
+        </div>
+
+        <div class="settingRow">
+          <div class="settingLabel">Fade out when sleep timer ends</div>
+          <label class="switch">
+            <input type="checkbox" id="enableFadeOut">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="settingRow">
+          <div class="settingLabel">Fade-out duration</div>
+          <div class="settingControl">
+            <input type="range" id="fadeOutSec" min="0" max="12" step="0.5">
+            <div class="settingValue" id="fadeOutSecVal"></div>
+          </div>
+        </div>
+
+        <!-- Desktop Only -->
+        <div class="settingsSectionTitle" id="desktopSectionTitle">Desktop Only <span style="font-weight:400;text-transform:none;letter-spacing:0;">(volume control not available on iOS)</span></div>
+
+        <div class="settingRow" id="masterVolRow">
+          <div class="settingLabel">Master volume <span class="iosNote hidden" id="masterVolIosNote">(not available on iOS)</span></div>
+          <div class="settingControl">
+            <input type="range" id="masterVol" min="0" max="1" step="0.01">
+            <div class="settingValue" id="masterVolVal"></div>
+          </div>
+        </div>
+
+        <div class="settingRow" id="showMainVolumeRow">
+          <div class="settingLabel">Show master volume on main screen <span class="iosNote hidden" id="showMainVolumeIosNote">(not available on iOS)</span></div>
+          <label class="switch">
+            <input type="checkbox" id="showMainVolume">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settingRow" id="normalizeRow">
+          <div class="settingLabel">Normalize track loudness <span class="reloadIndicator hidden" id="reloadIndicator">(reload required)</span> <span class="iosNote hidden" id="normalizeIosNote">(not available on iOS)</span></div>
+          <label class="switch">
+            <input type="checkbox" id="enableNormalize">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settingRow" id="showPerTrackRow">
+          <div class="settingLabel">Show sound-specific controls <span class="iosNote hidden" id="showPerTrackIosNote">(not available on iOS)</span></div>
+          <label class="switch">
+            <input type="checkbox" id="showPerTrackPanel">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settingsHint">
+          Tip: iOS may require one tap on ▶︎ before audio starts.
+        </div>
+      </div>
     </div>
-    
-    <div class="sectionTitle" data-section="core">
-      <span class="collapseBtn">▼</span>
-      Core Colors
+  </div>
+
+  <!-- Sticky favorites - outside content for proper sticky behavior -->
+  <div id="favoritesSection" class="stickyFavorites hidden">
+    <div class="sectionTitle" id="favHeader">
+      <div class="favHeaderRow">
+        <span class="favHeaderTitle">
+          <span class="collapseBtn">▼</span>
+          ★ Favorites
+        </span>
+        <span class="favEditBtn" id="favEditBtn">Edit</span>
+      </div>
     </div>
-    <div class="grid" id="coreGrid"></div>
-    
-    <div class="sectionTitle" data-section="blends">
-      <span class="collapseBtn">▼</span>
-      Nature + Noise Blends
+    <div class="grid" id="favGrid"></div>
+  </div>
+
+  <!-- Scrollable stations -->
+  <div class="content" id="mainContent">
+    <div class="loadingState" id="loadingState">
+      <div style="text-align:center; padding:40px; color:var(--text-tertiary);">
+        <div style="font-size:14px;">Loading sounds...</div>
+      </div>
     </div>
-    <div class="grid" id="blendsGrid"></div>
-    
-    <div class="sectionTitle" data-section="binaural">
-      <span class="collapseBtn">▼</span>
-      Binaural Beats
-      <span class="sectionNote">🎧 headphones required</span>
-    </div>
-    <div class="grid" id="binauralGrid"></div>
-    
-    <div class="sectionTitle" data-section="nature">
-      <span class="collapseBtn">▼</span>
-      Nature Sounds
-    </div>
-    <div class="grid" id="natureGrid"></div>
+    <div id="categoriesContainer"></div>
   </div>
 
 <script>
 (() => {
+  // CSV URL - loads from same directory
+  const CSV_URL = "sounds.csv";
+  const ASSET_VERSION = "1.2"; // bump when publishing changes
+
+  // Hardcoded category order (new categories appear alphabetically after these)
+  const CATEGORY_ORDER = [
+    "CORE COLORS",
+    "NATURE + NOISE BLENDS", 
+    "BINAURAL BEATS",
+    "NATURE SOUNDS",
+    "MECHANICAL / SCI-FI"
+  ];
+
   const COLORS = {
     white: "#ffffff",
     pink: "#ff69b4",
@@ -382,214 +912,519 @@
     red: "#cd5c5c",
     purple: "#9b59b6",
     orange: "#e67e22",
-    gray: "#95a5a6"
+    gray: "#95a5a6",
+    cyan: "#00bcd4"
   };
 
-  const SOURCES_CORE = [
-    {
-      key: "white",
-      name: "White",
-      color: COLORS.white,
-      desc: "Broad spectrum hiss. Best for masking sudden noises. 1 hour.",
-      url: "https://archive.org/download/24-hours-lectrofan-sound-and-white-noise-river-128/1%20hour%20lectrofan%20sound%20and%20white%20noise%20river%20128.mp3"
-    },
-    {
-      key: "pink",
-      name: "Pink",
-      color: COLORS.pink,
-      desc: "Smoother than white. Feels like rainfall. 1 hour.",
-      url: "https://archive.org/download/classical-music-mixed-with-pink-noise-for-sleep-and-relax_202105/Soothing%20Deep%20Pink%20Noise%20%201%20Hour.mp3"
-    },
-    {
-      key: "brown",
-      name: "Brown",
-      color: COLORS.brown,
-      desc: "Deep bass-heavy rumble. Very calming. 1 hour.",
-      url: "https://archive.org/download/1-hour-brown-noise-and-flowing-water-320/1%20hour%20Brown%20Noise%20and%20Flowing%20River%20flac.mp3"
-    },
-    {
-      key: "blue",
-      name: "Blue",
-      color: COLORS.blue,
-      desc: "Higher frequencies. Masks high-pitched sounds. 1 hour.",
-      url: "https://archive.org/download/1-hour-texas-river-rapids-and-deep-blue-noise-320/1%20hour%20texas%20river%20rapids%20and%20deep%20blue%20noise%20320.mp3"
-    },
-    {
-      key: "green_pure",
-      name: "Green (Pure)",
-      color: COLORS.green,
-      desc: "Coming soon — pure green noise source being sourced.",
-      url: null
-    },
-    {
-      key: "red",
-      name: "Red (Deep Brown)",
-      color: COLORS.red,
-      desc: "Even deeper than brown. Extremely relaxing. 1 hour.",
-      url: "https://archive.org/download/red-noise_202207/red%20noise.mp3"
-    }
-  ];
+  // Dynamic data from CSV
+  let ALL_SOURCES = [];
+  let SOURCES_BY_CATEGORY = {};
 
-  const SOURCES_BLENDS = [
-    {
-      key: "blue_waterfall",
-      name: "Blue + Waterfall",
-      color: COLORS.blue,
-      desc: "Blue noise with waterfall. 1 hour.",
-      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20sleep%20blue%20noise%20rem%20asmr%20320.mp3"
-    },
-    {
-      key: "red_waterfall",
-      name: "Red + Waterfall",
-      color: COLORS.red,
-      desc: "Deep red/brown with waterfall. 1 hour.",
-      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20rem%20red%20noise%20sleep%20320.mp3"
-    },
-    {
-      key: "brown_river",
-      name: "Brown + River",
-      color: COLORS.brown,
-      desc: "Brown noise with peaceful river. 1 hour.",
-      url: "https://archive.org/download/24-hours-peaceful-river-and-brown-noise-vbr/1%20hour%20v3%20river%20and%20brown%20noise%20vbr.mp3"
-    },
-    {
-      key: "brown_rain",
-      name: "Brown + Rain",
-      color: COLORS.brown,
-      desc: "Brown noise with rain. 1 hour.",
-      url: "https://archive.org/download/red-noise_202207/1-rain%20and%20brown%20noise%20-%20320%20-%201%20hour.mp3"
-    },
-    {
-      key: "brown_stream",
-      name: "Brown + Mountain Stream",
-      color: COLORS.brown,
-      desc: "Brown noise with stream and rain. 1 hour.",
-      url: "https://archive.org/download/1-hour-mountain-stream-doubled-and-brown-noise-flac/1%20hour%20mountain%20stream%20-%20rain%20shower%20-%20brown%20noise%20v2%20320.mp3"
-    },
-    {
-      key: "white_roaring",
-      name: "White + Roaring Waterfall",
-      color: COLORS.white,
-      desc: "White noise with powerful waterfall. 10 hours.",
-      url: "https://archive.org/download/1-fan-4-1-hour-flac/Roaring%20Waterfall%20White%20Noise%2010%20hours.mp3"
-    },
-    {
-      key: "brown_terraced",
-      name: "Brown + Terraced Waterfall",
-      color: COLORS.brown,
-      desc: "Brown noise with cascading water. 10 hours.",
-      url: "https://archive.org/download/1-fan-4-1-hour-flac/10%20hours%20terraced%20waterfall%20brown%20noise%20sound%20128.mp3"
-    },
-    {
-      key: "pink_reading",
-      name: "Pink for Focus",
-      color: COLORS.pink,
-      desc: "Pink noise for reading/concentration. 1 hour.",
-      url: "https://archive.org/download/classical-music-mixed-with-pink-noise-for-sleep-and-relax_202105/Pink%20Noise%20Focus%20on%20Reading%20Without%20DistractionsRuido%20RosaLeer%20Sin%20Distracciones.mp3"
-    },
-    {
-      key: "green_stream",
-      name: "Green + Stream",
-      color: COLORS.green,
-      desc: "Mountain stream — nature's green noise. 1 hour.",
-      url: "https://archive.org/download/10-hours-white-noise-river-mountain-stream-doubled-320/1%20Hour%20Calming%20Mountain%20Stream.mp3"
-    }
-  ];
+  // CSV parsing functions
+  // RFC4180-ish CSV parser (supports commas/newlines in quotes, and escaped quotes "")
+  function parseCSV(text) {
+    const rows = parseCSVRows(text);
+    if (rows.length < 2) return [];
 
-  const SOURCES_BINAURAL = [
-    {
-      key: "alpha_focus",
-      name: "Alpha (12 Hz) - Focus",
-      color: COLORS.purple,
-      desc: "Promotes alert relaxation and focus. Use headphones. 1 hour.",
-      url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Alpha%20Waves%20Binaural%20Beats%20%2812%20Hz%29%20%201H.mp3"
-    },
-    {
-      key: "theta_meditation",
-      name: "Theta (4 Hz) - Meditation",
-      color: COLORS.purple,
-      desc: "Deep meditation and creativity. Use headphones. 1 hour.",
-      url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Theta%20Waves%20%284%20Hz%29%20%20Deep%20Meditation%20-%201hr%20Binaural%20Beats.mp3"
-    },
-    {
-      key: "delta_sleep",
-      name: "Delta (0.5 Hz) - Deep Sleep",
-      color: COLORS.purple,
-      desc: "Deepest relaxation and sleep. Use headphones. 1 hour.",
-      url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Delta%20Waves%20%280.5%20Hz%20Binaural%20Beats%29%20%201H.mp3"
-    }
-  ];
+    const header = rows[0].map(h => (h || "").trim());
+    const includeIdx  = header.findIndex(h => h.toLowerCase().includes("include"));
+    const categoryIdx = header.findIndex(h => h.toLowerCase() === "category");
+    const titleIdx    = header.findIndex(h => h.toLowerCase() === "title");
+    const tagsIdx     = header.findIndex(h => h.toLowerCase() === "tags");
+    const urlIdx      = header.findIndex(h => h.toLowerCase() === "url");
+    const volumeIdx   = header.findIndex(h => h.toLowerCase() === "volume");
 
-  const SOURCES_NATURE = [
-    {
-      key: "thunder_beach",
-      name: "Thunder + Rain + Beach",
-      color: COLORS.gray,
-      desc: "Very low rumbling thunder with rain and waves. 8 hours.",
-      url: "https://archive.org/download/relaxingsounds/Thunder%201%208h%20VeryLowRumbling%2CRain%2CWaves-Beach.mp3"
-    },
-    {
-      key: "ocean_night",
-      name: "Ocean Waves (Night)",
-      color: COLORS.blue,
-      desc: "Beach waves from sunset into night. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/Waves%201%2010h%20Beach-Sunset%20into%20Night.mp3"
-    },
-    {
-      key: "rain_medium",
-      name: "Rain (Medium)",
-      color: COLORS.gray,
-      desc: "Medium rain with low gentle thunder. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/Rain%202%20%28Med.%2B%29%2010h%20LowGentleThunder%2C%20Downpour.mp3"
-    },
-    {
-      key: "campfire_crickets",
-      name: "Campfire + Crickets",
-      color: COLORS.orange,
-      desc: "Crackling campfire with crickets and gentle water. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/FIRE%201%2010h%20CracklingCampfire%2CCrickets%2CRainOrRiver-Night.mp3"
-    },
-    {
-      key: "box_fan",
-      name: "Box Fan",
-      color: COLORS.white,
-      desc: "Strong box fan. Classic sleep sound. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/FAN%201%2010h%20Strong%20Box%20Fan.mp3"
-    }
-  ];
+    const sounds = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length === 0) continue;
 
-  const ALL_SOURCES = [...SOURCES_CORE, ...SOURCES_BLENDS, ...SOURCES_BINAURAL, ...SOURCES_NATURE];
-  
-  // Load state from localStorage
-  let favorites = JSON.parse(localStorage.getItem('colorNoiseFavorites') || '[]');
-  let collapsedSections = JSON.parse(localStorage.getItem('colorNoiseCollapsed') || '{}');
-  
-  const player = document.getElementById("player");
+      const include = ((row[includeIdx] || "") + "").trim().toUpperCase();
+      if (includeIdx >= 0 && include !== "Y") continue;
+
+      const category = ((row[categoryIdx] || "") + "").trim();
+      const title    = ((row[titleIdx] || "") + "").trim();
+      const tags     = ((row[tagsIdx] || "") + "").trim();
+      const url      = ((row[urlIdx] || "") + "").trim();
+
+      const volumeStr = volumeIdx >= 0 ? (((row[volumeIdx] || "") + "").trim()) : "";
+      const volume = volumeStr ? parseFloat(volumeStr) : 1.0;
+
+      if (!title || !url) continue;
+
+      const key = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+      const color = detectColor(title, tags);
+      const headphones = (category || "").toUpperCase().includes("BINAURAL") ||
+                        tags.toLowerCase().includes("headphones") ||
+                        tags.toLowerCase().includes("binaural");
+
+      sounds.push({
+        key,
+        name: title,
+        color,
+        desc: tags.split(",").slice(0, 3).map(t => t.trim()).join(", ") || category,
+        url,
+        category,
+        volume: isNaN(volume) ? 1.0 : volume,
+        headphones
+      });
+    }
+    return sounds;
+  }
+
+  function parseCSVRows(text) {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+
+    text = (text || "").replace(/
+/g, "
+").replace(//g, "
+");
+
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; }
+          else inQuotes = false;
+        } else {
+          field += c;
+        }
+        continue;
+      }
+
+      if (c === '"') { inQuotes = true; continue; }
+
+      if (c === ",") { row.push(field); field = ""; continue; }
+
+      if (c === "
+") {
+        row.push(field); field = "";
+        if (!row.every(v => (v || "").trim() === "")) rows.push(row);
+        row = [];
+        continue;
+      }
+
+      field += c;
+    }
+
+    row.push(field);
+    if (!row.every(v => (v || "").trim() === "")) rows.push(row);
+
+    return rows;
+  }
+
+
+  function detectColor(title, tags) {
+    const text = (title + ' ' + tags).toLowerCase();
+    if (text.includes('white')) return COLORS.white;
+    if (text.includes('pink')) return COLORS.pink;
+    if (text.includes('brown')) return COLORS.brown;
+    if (text.includes('blue')) return COLORS.blue;
+    if (text.includes('green') || text.includes('turquoise')) return COLORS.green;
+    if (text.includes('red')) return COLORS.red;
+    if (text.includes('alpha') || text.includes('theta') || text.includes('delta') || 
+        text.includes('gamma') || text.includes('beta') || text.includes('binaural') ||
+        text.includes('isochronic')) return COLORS.purple;
+    if (text.includes('fire') || text.includes('campfire') || text.includes('projector')) return COLORS.orange;
+    if (text.includes('rain') || text.includes('thunder') || text.includes('fan')) return COLORS.gray;
+    if (text.includes('ocean') || text.includes('wave') || text.includes('starship') || 
+        text.includes('engine') || text.includes('space')) return COLORS.blue;
+    if (text.includes('forest') || text.includes('nature') || text.includes('rainforest') ||
+        text.includes('stream') || text.includes('river')) return COLORS.green;
+    if (text.includes('train')) return COLORS.brown;
+    if (text.includes('hot tub') || text.includes('jacuzzi') || text.includes('cyan')) return COLORS.cyan;
+    return COLORS.gray;
+  }
+
+  function organizeSounds(sounds) {
+    const byCategory = {};
+    sounds.forEach(sound => {
+      const cat = sound.category || 'OTHER';
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(sound);
+    });
+    return byCategory;
+  }
+
+  function getOrderedCategories(byCategory) {
+    const knownCats = CATEGORY_ORDER.filter(c => byCategory[c]);
+    const unknownCats = Object.keys(byCategory)
+      .filter(c => !CATEGORY_ORDER.includes(c))
+      .sort();
+    return [...knownCats, ...unknownCats];
+  }
+
+  function renderCategories() {
+    const container = document.getElementById('categoriesContainer');
+    container.innerHTML = '';
+
+    const orderedCats = getOrderedCategories(SOURCES_BY_CATEGORY);
+
+    orderedCats.forEach(category => {
+      const sectionKey = category.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      
+      if (collapsedSections[sectionKey] === undefined) {
+        collapsedSections[sectionKey] = sectionKey !== 'core_colors';
+      }
+
+      const isCollapsed = collapsedSections[sectionKey];
+      const isBinaural = category.toUpperCase().includes('BINAURAL');
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'sectionTitle' + (isCollapsed ? ' collapsed' : '');
+      titleEl.dataset.section = sectionKey;
+      titleEl.innerHTML = `
+        <span class="collapseBtn">▼</span>
+        ${category}
+        ${isBinaural ? '<span class="sectionNote">🎧 headphones required</span>' : ''}
+      `;
+
+      const gridEl = document.createElement('div');
+      gridEl.className = 'grid' + (isCollapsed ? ' hidden' : '');
+      gridEl.id = sectionKey + 'Grid';
+
+      container.appendChild(titleEl);
+      container.appendChild(gridEl);
+
+      titleEl.onclick = () => {
+        const collapsed = titleEl.classList.toggle('collapsed');
+        gridEl.classList.toggle('hidden', collapsed);
+        collapsedSections[sectionKey] = collapsed;
+        localStorage.setItem(LS_COL, JSON.stringify(collapsedSections));
+      };
+    });
+  }
+
+  async function loadSounds() {
+    const loadingEl = document.getElementById('loadingState');
+    const containerEl = document.getElementById('categoriesContainer');
+
+    try {
+      const response = await fetch(CSV_URL + '?v=' + encodeURIComponent(ASSET_VERSION));
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      
+      const text = await response.text();
+      ALL_SOURCES = parseCSV(text);
+      
+      if (ALL_SOURCES.length === 0) {
+        throw new Error('No sounds found in CSV');
+      }
+
+      SOURCES_BY_CATEGORY = organizeSounds(ALL_SOURCES);
+      
+      loadingEl.style.display = 'none';
+      renderCategories();
+      renderAll();
+      checkArchiveStatus();
+      
+    } catch (err) {
+      console.error('Failed to load sounds:', err);
+      loadingEl.innerHTML = '<div style="text-align:center; padding:40px; color:#e74c3c;">' +
+        '<div>Failed to load sounds</div>' +
+        '<div style="font-size:12px; margin-top:8px; opacity:0.7;">' + err.message + '</div>' +
+        '<button onclick="location.reload()" style="margin-top:12px; padding:8px 16px; border-radius:8px; border:1px solid #e74c3c; background:transparent; color:#e74c3c; cursor:pointer;">Retry</button>' +
+        '</div>';
+    }
+  }
+
+  // LocalStorage keys
+  const LS_FAV = "colorNoiseFavorites";
+  const LS_COL = "colorNoiseCollapsed";
+  const LS_LAST_KEY = "colorNoiseLastKey";
+  const LS_LAST_NAME = "colorNoiseLastName";
+  const LS_SETTINGS = "colorNoiseSettings_v1";
+  const LS_TRIMS = "colorNoiseTrackTrims_v1";
+
+  // Load state
+  let favorites = JSON.parse(localStorage.getItem(LS_FAV) || "[]");
+  let collapsedSections = JSON.parse(localStorage.getItem(LS_COL) || '{"core":false,"blends":true,"binaural":true,"nature":true,"mechanical":true}');
+  let favoritesEditMode = false;
+
+  // Settings (with defaults)
+  let settings = (() => {
+    const defaults = {
+      theme: "system",
+      enableCrossfade: true,
+      crossfadeSec: 1.5,
+      enableFadeOut: true,
+      fadeOutSec: 2.0,
+      masterVol: 1.0,
+      showSleepTimer: true,
+      showMainVolume: true,
+      enableNormalize: true
+    };
+    try {
+      const saved = JSON.parse(localStorage.getItem(LS_SETTINGS) || "null");
+      return { ...defaults, ...(saved || {}) };
+    } catch {
+      return defaults;
+    }
+  })();
+
+  // Theme handling
+  function getSystemTheme() {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+
+  function applyTheme(theme) {
+    const effectiveTheme = theme === "system" ? getSystemTheme() : theme;
+    document.documentElement.setAttribute("data-theme", effectiveTheme);
+    
+    // Update theme-color meta tag for mobile browsers
+    const themeColor = effectiveTheme === "light" ? "#f5f7fa" : "#0b0f18";
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
+  }
+
+  function updateThemeSelector() {
+    document.querySelectorAll(".themeOption").forEach(btn => {
+      const isActive = btn.dataset.theme === settings.theme;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-checked", isActive ? "true" : "false");
+    });
+  }
+
+  // Listen for system theme changes (with Safari fallback)
+  const mql = window.matchMedia("(prefers-color-scheme: dark)");
+  const onSystemThemeChange = () => {
+    if (settings.theme === "system") applyTheme("system");
+  };
+  if (typeof mql.addEventListener === "function") mql.addEventListener("change", onSystemThemeChange);
+  else if (typeof mql.addListener === "function") mql.addListener(onSystemThemeChange);
+
+// Apply initial theme
+  applyTheme(settings.theme);
+
+
+  // iOS background/lock-screen: WebAudio often gets suspended, causing silent playback.
+  // We use a simple <audio>-only path on iPhone/iPad to keep sound audible when locked/minimized.
+  const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  function setMediaSession(title) {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      const iconEl = document.querySelector('link[rel~="icon"]');
+      const iconHref = iconEl ? iconEl.href : "";
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title || "Color Noise",
+        artist: "ColorNoise",
+        album: "ColorNoise Feeds",
+        artwork: iconHref ? [{ src: iconHref }] : []
+      });
+    } catch {}
+  }
+
+  // Per-track trim (dB) storage for loudness normalization
+  let trackTrims = (() => {
+    try { return JSON.parse(localStorage.getItem(LS_TRIMS) || "{}"); } catch { return {}; }
+  })();
+
+  function saveTrackTrims() {
+    try { localStorage.setItem(LS_TRIMS, JSON.stringify(trackTrims)); } catch {}
+  }
+
+  function getTrimDb(key) {
+    const v = Number(trackTrims[key] ?? 0);
+    if (!isFinite(v)) return 0;
+    return Math.max(-18, Math.min(18, v));
+  }
+
+  function setTrimDb(key, db) {
+    if (!key) return;
+    const v = Math.max(-18, Math.min(18, Number(db)));
+    trackTrims[key] = v;
+    saveTrackTrims();
+  }
+
+
+  function applyPerTrackToElement(player, key) {
+    try {
+      const base = (settings.masterVol ?? 1);
+      const g = dbToGain(getTrimDb(key));
+      player.volume = Math.max(0, Math.min(1, base * g));
+    } catch {}
+  }
+
+  function dbToGain(db) {
+    return Math.pow(10, db / 20);
+  }
+
+  function saveSettings() {
+    try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch {}
+  }
+
+  // Elements
+  const playerA = document.getElementById("playerA");
+  const playerB = document.getElementById("playerB");
+  const players = [playerA, playerB];
+
   const nowPlayingTrack = document.getElementById("nowPlayingTrack");
   const favoritesSection = document.getElementById("favoritesSection");
   const favGrid = document.getElementById("favGrid");
+
   const timerDisplay = document.getElementById("timerDisplay");
   const toggleTimerBtn = document.getElementById("toggleTimer");
   const hoursEl = document.getElementById("hours");
   const minsEl = document.getElementById("mins");
 
+  // Settings drawer elements
+  // ---- Settings accessibility helpers (focus trap) ----
+  let lastFocusedEl = null;
+  function getFocusable(container) {
+    return Array.from(container.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )).filter(el => !el.disabled && el.offsetParent !== null);
+  }
+  function trapFocus(e) {
+    if (e.key !== "Tab") return;
+    if (settingsOverlay.classList.contains("hidden")) return;
+    const focusables = getFocusable(settingsOverlay);
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  const settingsBtn = document.getElementById("settingsBtn");
+  const settingsOverlay = document.getElementById("settingsOverlay");
+  const settingsClose = document.getElementById("settingsClose");
+  const enableCrossfadeEl = document.getElementById("enableCrossfade");
+  const crossfadeSecEl = document.getElementById("crossfadeSec");
+  const crossfadeSecVal = document.getElementById("crossfadeSecVal");
+  const enableFadeOutEl = document.getElementById("enableFadeOut");
+  const fadeOutSecEl = document.getElementById("fadeOutSec");
+  const fadeOutSecVal = document.getElementById("fadeOutSecVal");
+  const masterVolEl = document.getElementById("masterVol");
+  const masterVolVal = document.getElementById("masterVolVal");
+  const showSleepTimerEl = document.getElementById("showSleepTimer");
+  const showMainVolumeEl = document.getElementById("showMainVolume");
+  const enableNormalizeEl = document.getElementById("enableNormalize");
+  const showPerTrackPanelEl = document.getElementById("showPerTrackPanel");
+
+  const mainVolRow = document.getElementById("mainVolRow");
+  const mainMasterVolEl = document.getElementById("mainMasterVol");
+  const mainMasterVolVal = document.getElementById("mainMasterVolVal");
+  const perTrackRow = document.getElementById("perTrackRow");
+  const mainTrimDownEl = document.getElementById("mainTrimDown");
+  const mainTrimUpEl = document.getElementById("mainTrimUp");
+  const mainTrimResetEl = document.getElementById("mainTrimReset");
+  const mainTrimValEl = document.getElementById("mainTrimVal");
+
+  // Active player index
+  let activeIdx = 0;
   let currentKey = null;
 
-  function saveFavorites() {
-    localStorage.setItem('colorNoiseFavorites', JSON.stringify(favorites));
+  function activePlayer() { return players[activeIdx]; }
+  function inactivePlayer() { return players[1 - activeIdx]; }
+
+  // WebAudio graph (for fades/crossfades)
+  let audioCtx = null;
+  let mediaSources = [null, null];
+  let gains = [null, null];
+  let trimGains = [null, null];
+  let compressor = null;
+  let masterGain = null;
+
+  function ensureAudioGraph() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Master gain (volume)
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = settings.masterVol;
+
+    // Light compressor (gentle leveling of peaks)
+    compressor = audioCtx.createDynamicsCompressor();
+    compressor.threshold.value = -24;   // dB
+    compressor.knee.value = 18;         // dB
+    compressor.ratio.value = 2.0;
+    compressor.attack.value = 0.01;     // s
+    compressor.release.value = 0.25;    // s
+
+    // Routing: per-player trim -> crossfade gain -> (optional compressor) -> master -> speakers
+    const postNode = () => (settings.enableNormalize ? compressor : masterGain);
+
+    // Connect post chain: compressor -> master -> destination OR direct master -> destination
+    if (settings.enableNormalize) {
+      compressor.connect(masterGain);
+    }
+    masterGain.connect(audioCtx.destination);
+
+    players.forEach((el, i) => {
+      const src = audioCtx.createMediaElementSource(el);
+
+      const trim = audioCtx.createGain();    // per-track trim
+      const g = audioCtx.createGain();       // crossfade gain
+
+      trim.gain.value = 1;
+      g.gain.value = (i === activeIdx) ? 1 : 0;
+
+      src.connect(trim);
+      trim.connect(g);
+
+      if (settings.enableNormalize) {
+        g.connect(compressor);
+      } else {
+        g.connect(masterGain);
+      }
+
+      mediaSources[i] = src;
+      trimGains[i] = trim;
+      gains[i] = g;
+    });
   }
-  
+
+
+  async function resetAudioGraph() {
+    // Stop audio and rebuild the WebAudio graph on next play (needed when toggling normalization).
+    try { activePlayer().pause(); } catch {}
+    try { inactivePlayer().pause(); } catch {}
+    try {
+      if (audioCtx) await audioCtx.close();
+    } catch {}
+    audioCtx = null;
+    mediaSources = [null, null];
+    gains = [null, null];
+    trimGains = [null, null];
+    compressor = null;
+    masterGain = null;
+  }
+
+
+  function resumeAudioContext() {
+    // iOS/Safari may start suspended.
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume().catch(() => {});
+    }
+  }
+
+  function setNowPlaying(text) {
+    nowPlayingTrack.textContent = text;
+  }
+
+  function persistNowPlaying(key, name) {
+    try {
+      localStorage.setItem(LS_LAST_KEY, key || "");
+      localStorage.setItem(LS_LAST_NAME, name || "");
+    } catch {}
+  }
+
+  function saveFavorites() {
+    localStorage.setItem(LS_FAV, JSON.stringify(favorites));
+  }
+
   function saveCollapsed() {
-    localStorage.setItem('colorNoiseCollapsed', JSON.stringify(collapsedSections));
+    localStorage.setItem(LS_COL, JSON.stringify(collapsedSections));
   }
 
   function toggleFavorite(key) {
     const idx = favorites.indexOf(key);
-    if (idx === -1) {
-      favorites.push(key);
-    } else {
-      favorites.splice(idx, 1);
-    }
+    if (idx === -1) favorites.push(key);
+    else favorites.splice(idx, 1);
     saveFavorites();
     renderAll();
   }
@@ -598,21 +1433,338 @@
     document.querySelectorAll(".playBtn").forEach(b => {
       const isActive = b.dataset.key === key;
       b.classList.toggle("active", isActive);
-      if (b.textContent !== "Soon") {
-        b.textContent = isActive ? "Playing" : "Play";
-      }
+      if (b.textContent !== "Soon") b.textContent = isActive ? "Playing" : "Play";
     });
-    
+
     document.querySelectorAll(".favBtn").forEach(b => {
       b.classList.toggle("active", favorites.includes(b.dataset.key));
       b.textContent = favorites.includes(b.dataset.key) ? "★" : "☆";
     });
+
+    document.querySelectorAll(".favTile").forEach(t => {
+      t.classList.toggle("active", t.dataset.key === key);
+    });
   }
 
+  function describeMediaError(err) {
+    const code = err?.code;
+    switch (code) {
+      case 1: return "aborted";
+      case 2: return "network error";
+      case 3: return "decode error";
+      case 4: return "source not supported";
+      default: return "unknown error";
+    }
+  }
+
+  // ---- Fade helpers (WebAudio Gain ramps) ----
+  function rampGain(g, from, to, seconds) {
+    if (!audioCtx || !g) return;
+    const t0 = audioCtx.currentTime;
+    g.gain.cancelScheduledValues(t0);
+    g.gain.setValueAtTime(from, t0);
+    g.gain.linearRampToValueAtTime(to, t0 + Math.max(0, seconds));
+  }
+
+  function fadeOutAndStop(playerEl, gainNode, seconds) {
+    return new Promise((resolve) => {
+      if (!audioCtx || !gainNode || seconds <= 0) {
+        try { playerEl.pause(); } catch {}
+        resolve();
+        return;
+      }
+      const from = gainNode.gain.value;
+      rampGain(gainNode, from, 0, seconds);
+      setTimeout(() => {
+        try { playerEl.pause(); } catch {}
+        resolve();
+      }, Math.ceil(seconds * 1000));
+    });
+  }
+
+  // ---- Core playback logic ----
+  async function stopPlayback(reasonText = "Select a sound", useFade = false) {
+
+    if (IS_IOS) {
+      const p = activePlayer();
+      try { p.pause(); } catch {}
+      try { p.removeAttribute("src"); p.load(); } catch {}
+      setNowPlaying(reasonText);
+      setActive(null);
+      currentKey = null;
+      persistNowPlaying("", "");
+      applyPerTrackVisibility();
+      refreshTrimUI();
+      return;
+    }
+
+    const p = activePlayer();
+    ensureAudioGraph();
+    resumeAudioContext();
+
+    if (useFade && settings.enableFadeOut) {
+      await fadeOutAndStop(p, gains[activeIdx], settings.fadeOutSec);
+      // restore gain for future plays
+      gains[activeIdx].gain.value = 1;
+    } else {
+      try { p.pause(); } catch {}
+    }
+
+    currentKey = null;
+    setActive(null);
+    setNowPlaying(reasonText);
+    persistNowPlaying("", "");
+    applyPerTrackVisibility();
+    refreshTrimUI();
+  }
+
+  async function playItem(item) {
+
+    if (IS_IOS) {
+      // Toggle behavior: if same track is playing, stop.
+      if (currentKey === item.key && !activePlayer().paused) {
+        await stopPlayback("Select a sound", false);
+        return;
+      }
+
+      const oldP = players[activeIdx];
+      const newIdx = 1 - activeIdx;
+      const newP = players[newIdx];
+
+      currentKey = item.key;
+      persistNowPlaying(item.key, item.name);
+      setActive(currentKey);
+      setNowPlaying("Loading…");
+      applyPerTrackVisibility();
+      refreshTrimUI();
+
+      try { oldP.pause(); } catch {}
+      try { oldP.removeAttribute("src"); oldP.load(); } catch {}
+
+      newP.classList.remove("hidden");
+      oldP.classList.add("hidden");
+
+      newP.crossOrigin = "anonymous";
+      newP.src = item.url;
+      newP.load();
+      applyPerTrackToElement(newP, item.key);
+
+      try {
+        const pr = newP.play();
+        if (pr !== undefined) await pr;
+        setNowPlaying(item.name);
+        setMediaSession(item.name);
+      } catch (e) {
+        setNowPlaying(item.name + " (tap ▶)");
+      }
+
+      activeIdx = newIdx;
+      setActive(currentKey);
+      return;
+    }
+
+    if (!item?.url) return;
+
+    ensureAudioGraph();
+    resumeAudioContext();
+
+    // Apply per-track trim to the target player (if normalization enabled)
+    const applyTrimTo = (playerIndex, key) => {
+      if (!settings.enableNormalize) return;
+      const db = getTrimDb(key);
+      const g = dbToGain(db);
+      if (trimGains[playerIndex]) trimGains[playerIndex].gain.value = g;
+    };
+
+    // Toggle behavior: if same track is playing, stop.
+    if (currentKey === item.key && !activePlayer().paused) {
+      await stopPlayback("Select a sound", false);
+      return;
+    }
+
+    // If nothing playing yet, just load into active player.
+    if (!currentKey || activePlayer().paused) {
+      currentKey = item.key;
+      persistNowPlaying(item.key, item.name);
+      setActive(currentKey);
+      setNowPlaying("Loading…");
+      applyPerTrackVisibility();
+      refreshTrimUI();
+
+      const p = activePlayer();
+      applyTrimTo(activeIdx, item.key);
+      p.src = "";
+      p.load();
+      p.src = item.url;
+      p.load();
+
+      const prom = p.play();
+      if (prom !== undefined) {
+        prom.then(() => setNowPlaying(item.name))
+            .catch(() => setNowPlaying(item.name + " (tap ▶)"));
+      }
+      return;
+    }
+
+    // Switching tracks: stop the old one and start the new one immediately (crossfade if enabled).
+    const doCrossfade = settings.enableCrossfade && settings.crossfadeSec > 0;
+
+    const oldIdx = activeIdx;
+    const newIdx = 1 - activeIdx;
+    const oldP = players[oldIdx];
+    const newP = players[newIdx];
+
+    currentKey = item.key;
+    persistNowPlaying(item.key, item.name);
+    setActive(currentKey);
+    setNowPlaying("Loading…");
+      applyPerTrackVisibility();
+      refreshTrimUI();
+
+    // Prepare new player
+    newP.classList.remove("hidden");
+    oldP.classList.add("hidden");
+
+    newP.src = "";
+    newP.load();
+    newP.src = item.url;
+    newP.load();
+
+    // Initialize gains for the new player
+    if (doCrossfade) {
+      gains[newIdx].gain.value = 0;
+    } else {
+      gains[newIdx].gain.value = 1;
+    }
+
+    // Try to start the new track right away (within the click gesture)
+    let newStarted = false;
+    try {
+      const pr = newP.play();
+      if (pr !== undefined) await pr;
+      newStarted = true;
+      setNowPlaying(item.name);
+    } catch (e) {
+      // If autoplay is blocked for any reason, stop the old track anyway and leave the new one ready.
+      setNowPlaying(item.name + " (tap ▶)");
+      newStarted = false;
+    }
+
+    if (!doCrossfade) {
+      // Hard switch: always stop old immediately
+      try { oldP.pause(); } catch {}
+      activeIdx = newIdx;
+      setActive(currentKey);
+      return;
+    }
+
+    // Crossfade: always fade the old one out. Fade the new one in only if it actually started.
+    const sec = settings.crossfadeSec;
+
+    // Fade old down
+    rampGain(gains[oldIdx], gains[oldIdx].gain.value, 0, sec);
+
+    // Fade new up (only if started); otherwise keep it silent until user taps ▶.
+    if (newStarted) {
+      rampGain(gains[newIdx], gains[newIdx].gain.value, 1, sec);
+    } else {
+      gains[newIdx].gain.value = 0;
+    }
+
+    setTimeout(() => {
+      // Clamp to silence and stop old
+      gains[oldIdx].gain.value = 0;
+      try { oldP.pause(); } catch {}
+      oldP.classList.add("hidden");
+      newP.classList.remove("hidden");
+      activeIdx = newIdx;
+      setActive(currentKey);
+    }, Math.ceil(sec * 1000));
+
+  }
+
+  // Attach media event instrumentation (both players)
+  players.forEach((p) => {
+    p.addEventListener("error", () => {
+      const msg = describeMediaError(p.error);
+      const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim() || "Audio";
+      setNowPlaying(`${lastName} (failed: ${msg})`);
+    });
+    p.addEventListener("stalled", () => {
+      if (p.paused) return;
+      const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim() || "Audio";
+      setNowPlaying(`${lastName} (stalled)`);
+    });
+    p.addEventListener("waiting", () => {
+      if (p.paused) return;
+      const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim() || "Audio";
+      if (currentKey) setNowPlaying(`${lastName} (buffering…)`);
+    });
+    p.addEventListener("playing", () => {
+      const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim();
+      if (lastName) setNowPlaying(lastName);
+    });
+
+    p.addEventListener("pause", () => {
+      // If user pauses via native controls, reflect that (and avoid misleading "stalled").
+      const lastName = (localStorage.getItem(LS_LAST_NAME) || "").trim();
+      if (lastName) setNowPlaying(`${lastName} (paused)`);
+    });
+  });
+
+  // ---- UI Tile builder ----
   function makeTile(item, compact = false) {
     const tile = document.createElement("div");
-    tile.className = "tile";
+    tile.className = "tile" + (compact ? " compact-fav" : "");
 
+    // Compact favorites tile
+    if (compact) {
+      tile.className = "favTile" + (currentKey === item.key ? " active" : "");
+      tile.dataset.key = item.key;
+
+      const dot = document.createElement("span");
+      dot.className = "colorDot";
+      dot.style.backgroundColor = item.color;
+      dot.style.color = item.color;
+
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = item.name;
+
+      tile.appendChild(dot);
+      tile.appendChild(name);
+
+      if (item.headphones) {
+        const hpIcon = document.createElement("span");
+        hpIcon.className = "headphoneIcon";
+        hpIcon.textContent = "🎧";
+        tile.appendChild(hpIcon);
+      }
+
+      // Edit-mode action: remove only (no play)
+      if (favoritesEditMode) {
+        tile.classList.add("editing");
+
+        const actions = document.createElement("span");
+        actions.className = "favActions";
+
+        const rm = document.createElement("span");
+        rm.className = "miniBtn";
+        rm.textContent = "✕";
+        rm.title = "Remove favorite";
+        rm.onclick = (e) => { e.stopPropagation(); toggleFavorite(item.key); };
+
+        actions.appendChild(rm);
+        tile.appendChild(actions);
+      }
+
+      if (item.url) {
+        tile.onclick = () => { if (!favoritesEditMode) playItem(item); };
+      }
+      return tile;
+    }
+
+    // Full tile
     const top = document.createElement("div");
     top.className = "tileTop";
 
@@ -637,36 +1789,10 @@
     const playBtn = document.createElement("div");
     playBtn.className = "playBtn" + (currentKey === item.key ? " active" : "");
     playBtn.dataset.key = item.key;
-    
+
     if (item.url) {
       playBtn.textContent = currentKey === item.key ? "Playing" : "Play";
-      playBtn.onclick = () => {
-        if (!item.url) return;
-        
-        if (currentKey === item.key && !player.paused) {
-          player.pause();
-          currentKey = null;
-          nowPlayingTrack.textContent = "Select a sound";
-          setActive(null);
-          return;
-        }
-
-        currentKey = item.key;
-        setActive(currentKey);
-        nowPlayingTrack.textContent = "Loading...";
-
-        player.src = item.url;
-        player.load();
-        
-        const playPromise = player.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            nowPlayingTrack.textContent = item.name;
-          }).catch(e => {
-            nowPlayingTrack.textContent = item.name + " (tap ▶)";
-          });
-        }
-      };
+      playBtn.onclick = () => playItem(item);
     } else {
       playBtn.textContent = "Soon";
       playBtn.style.opacity = "0.5";
@@ -679,14 +1805,12 @@
     top.appendChild(playBtn);
 
     tile.appendChild(top);
-    
-    if (!compact) {
-      const desc = document.createElement("div");
-      desc.className = "desc";
-      desc.textContent = item.desc;
-      tile.appendChild(desc);
-    }
-    
+
+    const desc = document.createElement("div");
+    desc.className = "desc";
+    desc.textContent = item.desc;
+    tile.appendChild(desc);
+
     return tile;
   }
 
@@ -696,14 +1820,35 @@
     sources.forEach(s => grid.appendChild(makeTile(s)));
   }
 
+  function updateLayout() {
+    const header = document.querySelector('.fixedHeader');
+    const content = document.querySelector('.content');
+    const headerHeight = header.offsetHeight;
+
+    if (favoritesSection.classList.contains('hidden')) {
+      content.classList.remove('with-favorites');
+      content.style.paddingTop = (headerHeight + 16) + 'px';
+    } else {
+      favoritesSection.style.top = headerHeight + 'px';
+      content.classList.add('with-favorites');
+      requestAnimationFrame(() => {
+        const favHeight = favoritesSection.offsetHeight;
+        content.style.paddingTop = (headerHeight + favHeight + 16) + 'px';
+      });
+    }
+  }
+
   function renderAll() {
-    // Render favorites (compact)
+    // Favorites
     favGrid.innerHTML = "";
     const favItems = ALL_SOURCES.filter(s => favorites.includes(s.key));
-    
+
     if (favItems.length > 0) {
       favoritesSection.classList.remove("hidden");
       const favHeader = document.getElementById("favHeader");
+      const favEditBtn = document.getElementById("favEditBtn");
+      if (favEditBtn) favEditBtn.textContent = favoritesEditMode ? "Done" : "Edit";
+
       if (!collapsedSections.favorites) {
         favItems.forEach(s => favGrid.appendChild(makeTile(s, true)));
         favGrid.classList.remove("collapsed");
@@ -713,48 +1858,314 @@
         favHeader.classList.add("collapsed");
       }
     } else {
+      favoritesEditMode = false;
       favoritesSection.classList.add("hidden");
     }
 
-    // Render other sections
-    renderSection("coreGrid", SOURCES_CORE);
-    renderSection("blendsGrid", SOURCES_BLENDS);
-    renderSection("binauralGrid", SOURCES_BINAURAL);
-    renderSection("natureGrid", SOURCES_NATURE);
-    
-    // Apply collapsed state
-    document.querySelectorAll(".sectionTitle[data-section]").forEach(header => {
-      const section = header.dataset.section;
-      const grid = header.nextElementSibling;
-      if (collapsedSections[section]) {
-        header.classList.add("collapsed");
-        grid.classList.add("collapsed");
-      } else {
-        header.classList.remove("collapsed");
-        grid.classList.remove("collapsed");
-      }
+    // Render each category grid dynamically
+    const orderedCats = getOrderedCategories(SOURCES_BY_CATEGORY);
+    orderedCats.forEach(category => {
+      const sectionKey = category.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      const gridEl = document.getElementById(sectionKey + 'Grid');
+      if (!gridEl) return;
+      
+      gridEl.innerHTML = '';
+      const sounds = SOURCES_BY_CATEGORY[category] || [];
+      sounds.forEach(s => gridEl.appendChild(makeTile(s, false)));
     });
-    
+
     setActive(currentKey);
+    updateLayout();
   }
 
-  // Section collapse handlers
-  document.querySelectorAll(".sectionTitle[data-section]").forEach(header => {
-    header.onclick = () => {
-      const section = header.dataset.section;
-      collapsedSections[section] = !collapsedSections[section];
-      saveCollapsed();
+  // Collapse handlers are set up in renderCategories()
+
+  // Favorites header and edit toggle
+  const favEditBtnEl = document.getElementById("favEditBtn");
+  if (favEditBtnEl) {
+    favEditBtnEl.onclick = (e) => {
+      e.stopPropagation();
+      favoritesEditMode = !favoritesEditMode;
       renderAll();
     };
-  });
-  
+  }
   document.getElementById("favHeader").onclick = () => {
     collapsedSections.favorites = !collapsedSections.favorites;
     saveCollapsed();
     renderAll();
   };
 
-  // Timer logic
+  // ---- Settings drawer wiring ----
+  function openSettings() {
+    lastFocusedEl = document.activeElement;
+    document.addEventListener("keydown", trapFocus);
+    settingsOverlay.classList.remove("hidden");
+    settingsOverlay.setAttribute("aria-hidden", "false");
+    syncSettingsUI();
+    const focusables = getFocusable(settingsOverlay);
+    if (focusables[0]) focusables[0].focus();
+  if (IS_IOS) {
+    settings.enableCrossfade = false;
+    saveSettings();
+  }
+  }
+  
+  // Track if settings changes require a reload (deferred until settings panel closes)
+  let pendingReload = false;
+  
+  function closeSettings() {
+    settingsOverlay.classList.add("hidden");
+    settingsOverlay.setAttribute("aria-hidden", "true");
+    document.removeEventListener("keydown", trapFocus);
+    if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
+    lastFocusedEl = null;
+
+    // If normalization settings changed, reload now
+    if (pendingReload) {
+      pendingReload = false;
+      try { sessionStorage.setItem("colorNoiseDidReloadForNormalize", "1"); } catch {}
+      window.location.reload();
+    }
+  }
+  if (settingsBtn) settingsBtn.onclick = () => openSettings();
+  if (settingsClose) settingsClose.onclick = () => closeSettings();
+  if (settingsOverlay) {
+    settingsOverlay.addEventListener("click", (e) => {
+      if (e.target === settingsOverlay) closeSettings();
+    });
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !settingsOverlay.classList.contains("hidden")) closeSettings();
+  });
+
+  function fmtSec(x) { return `${Number(x).toFixed(Number(x) % 1 === 0 ? 0 : 1)}s`; }
+  function fmtPct(x) { return `${Math.round(Number(x) * 100)}%`; }
+
+  function syncSettingsUI() {
+    enableCrossfadeEl.checked = !!settings.enableCrossfade;
+    crossfadeSecEl.value = settings.crossfadeSec;
+    crossfadeSecVal.textContent = fmtSec(settings.crossfadeSec);
+
+    enableFadeOutEl.checked = !!settings.enableFadeOut;
+    fadeOutSecEl.value = settings.fadeOutSec;
+    fadeOutSecVal.textContent = fmtSec(settings.fadeOutSec);
+
+    masterVolEl.value = settings.masterVol;
+    masterVolVal.textContent = fmtPct(settings.masterVol);
+    if (mainMasterVolEl) mainMasterVolEl.value = settings.masterVol;
+    if (mainMasterVolVal) mainMasterVolVal.textContent = fmtPct(settings.masterVol);
+
+    if (showSleepTimerEl) showSleepTimerEl.checked = !!settings.showSleepTimer;
+
+    if (showMainVolumeEl) showMainVolumeEl.checked = !!settings.showMainVolume;
+    if (enableNormalizeEl) enableNormalizeEl.checked = !!settings.enableNormalize;
+    if (showPerTrackPanelEl) showPerTrackPanelEl.checked = !!settings.showPerTrackPanel;
+    
+    // Update theme selector
+    updateThemeSelector();
+  }
+
+  // Theme selector click handlers
+  document.querySelectorAll(".themeOption").forEach(btn => {
+    btn.onclick = () => {
+      settings.theme = btn.dataset.theme;
+      saveSettings();
+      applyTheme(settings.theme);
+      updateThemeSelector();
+    };
+  });
+
+  function applyMasterVol() {
+    // WebAudio path (desktop)
+    if (masterGain) masterGain.gain.value = settings.masterVol;
+    
+    // iOS path: update active player's volume directly
+    if (IS_IOS && currentKey) {
+      applyPerTrackToElement(activePlayer(), currentKey);
+    }
+  }
+
+  function applySleepTimerVisibility() {
+    const timerRow = document.querySelector(".timerRow");
+    if (!timerRow) return;
+    if (settings.showSleepTimer) timerRow.classList.remove("hidden");
+    else timerRow.classList.add("hidden");
+    updateLayout();
+  }
+
+
+  function applyMainVolumeVisibility() {
+    if (!mainVolRow) return;
+    // iOS doesn't support programmatic volume control (audio.volume is read-only)
+    // so hide the volume slider on iOS
+    if (IS_IOS) {
+      mainVolRow.classList.add("hidden");
+      return;
+    }
+    if (settings.showMainVolume) mainVolRow.classList.remove("hidden");
+    else mainVolRow.classList.add("hidden");
+    updateLayout();
+  }
+
+
+  function applyPerTrackVisibility() {
+    if (!perTrackRow) return;
+    // iOS doesn't support programmatic volume control (audio.volume is read-only)
+    // so hide per-track adjustments on iOS
+    if (IS_IOS) {
+      perTrackRow.classList.add("hidden");
+      return;
+    }
+    // On desktop, per-track adjustments require the WebAudio normalization graph
+    const shouldShow = !!settings.enableNormalize && !!settings.showPerTrackPanel && !!currentKey;
+    if (shouldShow) perTrackRow.classList.remove("hidden");
+    else perTrackRow.classList.add("hidden");
+    updateLayout();
+  }
+
+  enableCrossfadeEl.onchange = () => {
+    settings.enableCrossfade = enableCrossfadeEl.checked;
+    saveSettings();
+  };
+  crossfadeSecEl.oninput = () => {
+    settings.crossfadeSec = Number(crossfadeSecEl.value);
+    crossfadeSecVal.textContent = fmtSec(settings.crossfadeSec);
+    saveSettings();
+  };
+  enableFadeOutEl.onchange = () => {
+    settings.enableFadeOut = enableFadeOutEl.checked;
+    saveSettings();
+  };
+  fadeOutSecEl.oninput = () => {
+    settings.fadeOutSec = Number(fadeOutSecEl.value);
+    fadeOutSecVal.textContent = fmtSec(settings.fadeOutSec);
+    saveSettings();
+  };
+
+  if (showMainVolumeEl) {
+    showMainVolumeEl.onchange = () => {
+      settings.showMainVolume = showMainVolumeEl.checked;
+      saveSettings();
+      applyMainVolumeVisibility();
+  applyPerTrackVisibility();
+    };
+  }
+  
+  const reloadIndicator = document.getElementById("reloadIndicator");
+  function updateReloadIndicator() {
+    if (reloadIndicator) {
+      if (pendingReload) reloadIndicator.classList.remove("hidden");
+      else reloadIndicator.classList.add("hidden");
+    }
+  }
+  
+  if (showPerTrackPanelEl) {
+    showPerTrackPanelEl.onchange = () => {
+      settings.showPerTrackPanel = showPerTrackPanelEl.checked;
+      
+      // If enabling sound-specific controls, also enable normalization
+      if (settings.showPerTrackPanel && !settings.enableNormalize) {
+        settings.enableNormalize = true;
+        if (enableNormalizeEl) enableNormalizeEl.checked = true;
+        // Normalization change requires reload (deferred to settings close)
+        pendingReload = true;
+        updateReloadIndicator();
+      }
+      
+      saveSettings();
+      applyPerTrackVisibility();
+    };
+  }
+
+  if (enableNormalizeEl) {
+    enableNormalizeEl.onchange = async () => {
+      settings.enableNormalize = enableNormalizeEl.checked;
+      
+      // If disabling normalization, also disable sound-specific controls (they're useless without it)
+      if (!settings.enableNormalize && settings.showPerTrackPanel) {
+        settings.showPerTrackPanel = false;
+        if (showPerTrackPanelEl) showPerTrackPanelEl.checked = false;
+      }
+      
+      saveSettings();
+      applyPerTrackVisibility();
+
+      // Changing normalization re-wires the WebAudio graph; reload deferred to settings close
+      pendingReload = true;
+      updateReloadIndicator();
+    };
+  }
+
+  if (showSleepTimerEl) {
+    showSleepTimerEl.onchange = () => {
+      settings.showSleepTimer = showSleepTimerEl.checked;
+      saveSettings();
+      applySleepTimerVisibility();
+    };
+  }
+
+  if (mainMasterVolEl) {
+    mainMasterVolEl.oninput = () => {
+      settings.masterVol = Number(mainMasterVolEl.value);
+      if (mainMasterVolVal) mainMasterVolVal.textContent = fmtPct(settings.masterVol);
+      if (masterVolEl) masterVolEl.value = settings.masterVol;
+      if (masterVolVal) masterVolVal.textContent = fmtPct(settings.masterVol);
+      saveSettings();
+      applyMasterVol();
+    };
+  }
+
+  function refreshTrimUI() {
+    if (!mainTrimValEl) return;
+    const db = getTrimDb(currentKey);
+    mainTrimValEl.textContent = `${db.toFixed(0)} dB`;
+  }
+
+  function applyCurrentTrimToActive() {
+    if (IS_IOS) {
+      if (!currentKey) return;
+      applyPerTrackToElement(activePlayer(), currentKey);
+      return;
+    }
+
+    if (!settings.enableNormalize) return;
+    if (!currentKey) return;
+    if (!activePlayer().paused && trimGains && trimGains[activeIdx]) {
+      trimGains[activeIdx].gain.value = dbToGain(getTrimDb(currentKey));
+    }
+  }
+
+  if (mainTrimDownEl) mainTrimDownEl.onclick = () => {
+    if (!currentKey) return;
+    setTrimDb(currentKey, getTrimDb(currentKey) - 1);
+    applyCurrentTrimToActive();
+    refreshTrimUI();
+  };
+
+  if (mainTrimUpEl) mainTrimUpEl.onclick = () => {
+    if (!currentKey) return;
+    setTrimDb(currentKey, getTrimDb(currentKey) + 1);
+    applyCurrentTrimToActive();
+    refreshTrimUI();
+  };
+
+  if (mainTrimResetEl) mainTrimResetEl.onclick = () => {
+    if (!currentKey) return;
+    setTrimDb(currentKey, 0);
+    applyCurrentTrimToActive();
+    refreshTrimUI();
+  };
+
+  masterVolEl.oninput = () => {
+    settings.masterVol = Number(masterVolEl.value);
+    masterVolVal.textContent = fmtPct(settings.masterVol);
+    if (mainMasterVolEl) mainMasterVolEl.value = settings.masterVol;
+    if (mainMasterVolVal) mainMasterVolVal.textContent = fmtPct(settings.masterVol);
+    saveSettings();
+    applyMasterVol();
+  };
+
+  // ---- Sleep timer logic (with optional fade-out) ----
   let setHours = 0;
   let setMins = 0;
   let endTime = null;
@@ -766,16 +2177,25 @@
     const h = Math.floor(totalSec / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
     const s = totalSec % 60;
-    if (h > 0) {
-      return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-    }
+    if (h > 0) return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
     return m + ":" + String(s).padStart(2, "0");
+  }
+
+  function updateSetDurationPreview() {
+    if (endTime) return;
+    const totalMs = (setHours * 3600 + setMins * 60) * 1000;
+    if (totalMs <= 0) {
+      timerDisplay.textContent = "0:00";
+      timerDisplay.classList.add("off");
+      return;
+    }
+    timerDisplay.textContent = formatTime(totalMs);
+    timerDisplay.classList.add("off");
   }
 
   function updateTimerDisplay() {
     if (!endTime) {
-      timerDisplay.textContent = "0:00";
-      timerDisplay.classList.add("off");
+      updateSetDurationPreview();
       return;
     }
     const remaining = endTime - Date.now();
@@ -794,81 +2214,140 @@
     endTime = Date.now() + totalMs;
     toggleTimerBtn.textContent = "Stop";
     timerDisplay.classList.remove("off");
-    
+
     updateTimerDisplay();
     timerInterval = setInterval(updateTimerDisplay, 1000);
   }
 
-  function stopTimer(finished = false) {
+  async function stopTimer(finished = false) {
     if (timerInterval) {
       clearInterval(timerInterval);
       timerInterval = null;
     }
-    
+
     if (finished) {
-      player.pause();
-      currentKey = null;
-      nowPlayingTrack.textContent = "Timer finished";
-      setActive(null);
+      if (currentKey) {
+        if (settings.enableFadeOut && settings.fadeOutSec > 0) {
+          await stopPlayback("Timer finished", true);
+        } else {
+          await stopPlayback("Timer finished", false);
+        }
+      } else {
+        setNowPlaying("Timer finished");
+      }
     }
-    
+
     endTime = null;
     toggleTimerBtn.textContent = "Start";
-    timerDisplay.textContent = "0:00";
-    timerDisplay.classList.add("off");
+    updateSetDurationPreview();
   }
 
   toggleTimerBtn.onclick = () => {
-    if (endTime) {
-      stopTimer(false);
-    } else {
-      startTimer();
-    }
+    if (endTime) stopTimer(false);
+    else startTimer();
   };
 
-  document.getElementById("hMinus").onclick = () => { 
-    setHours = Math.max(0, setHours - 1); 
-    hoursEl.textContent = setHours; 
-  };
-  document.getElementById("hPlus").onclick = () => { 
-    setHours = Math.min(12, setHours + 1); 
-    hoursEl.textContent = setHours; 
-  };
-  document.getElementById("mMinus").onclick = () => { 
-    setMins = setMins - 15;
-    if (setMins < 0) setMins = 45;
-    minsEl.textContent = setMins; 
-  };
-  document.getElementById("mPlus").onclick = () => { 
-    setMins = setMins + 15;
-    if (setMins > 45) setMins = 0;
-    minsEl.textContent = setMins; 
-  };
+  document.getElementById("hMinus").onclick = () => { setHours = Math.max(0, setHours - 1); hoursEl.textContent = setHours; updateSetDurationPreview(); };
+  document.getElementById("hPlus").onclick = () => { setHours = Math.min(12, setHours + 1); hoursEl.textContent = setHours; updateSetDurationPreview(); };
+  document.getElementById("mMinus").onclick = () => { setMins = setMins - 15; if (setMins < 0) setMins = 45; minsEl.textContent = setMins; updateSetDurationPreview(); };
+  document.getElementById("mPlus").onclick = () => { setMins = setMins + 15; if (setMins > 45) setMins = 0; minsEl.textContent = setMins; updateSetDurationPreview(); };
 
-  // Initial render
-  renderAll();
+  // Initialize timer preview
+  updateSetDurationPreview();
 
-  // Check Internet Archive status
-  (async function checkArchiveStatus() {
-    const statusEl = document.getElementById("sourceStatus");
-    const testUrl = "https://archive.org/download/1-hour-brown-noise-and-flowing-water-320/1%20hour%20Brown%20Noise%20and%20Flowing%20River%20flac.mp3";
-    
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      
-      const response = await fetch(testUrl, { 
-        method: "HEAD",
-        mode: "no-cors",
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeout);
-      statusEl.innerHTML = '<span class="dot up"></span>Internet Archive: online';
-    } catch (e) {
-      statusEl.innerHTML = '<span class="dot down"></span>Internet Archive: offline';
-    }
+  // Restore last selection (do not autoplay)
+  (function restoreLastSelection() {
+    // Always start neutral on reload.
+    currentKey = null;
+    setActive(null);
+    setNowPlaying("Loading sounds...");
   })();
+
+  // Initial setup (before sounds load)
+  try { sessionStorage.removeItem("colorNoiseDidReloadForNormalize"); } catch {}
+  applySleepTimerVisibility();
+  applyMainVolumeVisibility();
+
+  // Disable volume-related settings on iOS (audio.volume is read-only on iOS)
+  if (IS_IOS) {
+    const disableRows = ['masterVolRow', 'showMainVolumeRow', 'normalizeRow', 'showPerTrackRow'];
+    const showNotes = ['masterVolIosNote', 'showMainVolumeIosNote', 'normalizeIosNote', 'showPerTrackIosNote'];
+    
+    disableRows.forEach(id => {
+      const row = document.getElementById(id);
+      if (row) row.classList.add('disabled');
+    });
+    
+    showNotes.forEach(id => {
+      const note = document.getElementById(id);
+      if (note) note.classList.remove('hidden');
+    });
+    
+    // Update the desktop section title to indicate it's disabled on iOS
+    const desktopTitle = document.getElementById('desktopSectionTitle');
+    if (desktopTitle) {
+      desktopTitle.innerHTML = 'Desktop Only <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);">(these features are not available on iOS)</span>';
+    }
+  }
+
+  // Fix initial layout (respond to header/favorites size changes)
+  if ("ResizeObserver" in window) {
+    const ro = new ResizeObserver(() => updateLayout());
+    const header = document.querySelector(".fixedHeader");
+    if (header) ro.observe(header);
+    if (favoritesSection) ro.observe(favoritesSection);
+  } else {
+    window.addEventListener("load", () => updateLayout());
+    setTimeout(() => updateLayout(), 250);
+  }
+
+  // Check sound engine status (Internet Archive) — reliable media probe
+  function checkArchiveStatus() {
+    const statusEl = document.getElementById("sourceStatus");
+    
+    // Use first available sound URL for testing
+    const testUrl = ALL_SOURCES[0]?.url;
+    if (!testUrl) {
+      statusEl.innerHTML = `<span class="dot down"></span>Sound engine: no sounds loaded`;
+      return;
+    }
+
+    const probe = new Audio();
+    probe.preload = "metadata";
+    probe.crossOrigin = "anonymous";
+
+    const set = (state, text) => {
+      statusEl.innerHTML = `<span class="dot ${state}"></span>${text}`;
+    };
+
+    set("checking", "Sound engine: checking…");
+
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      try { probe.src = ""; } catch {}
+      if (ok) set("up", "Sound engine: operational");
+      else set("down", "Sound engine: offline (Internet Archive appears down)");
+    };
+
+    const t = setTimeout(() => finish(false), 8000);
+    probe.addEventListener("canplaythrough", () => { clearTimeout(t); finish(true); }, { once: true });
+    probe.addEventListener("loadedmetadata", () => { clearTimeout(t); finish(true); }, { once: true });
+    probe.addEventListener("error", () => { clearTimeout(t); finish(false); }, { once: true });
+
+    probe.src = testUrl;
+    probe.load();
+  }
+
+  // Keep layout correct on resize/orientation change
+  window.addEventListener("resize", () => updateLayout());
+
+  // Load sounds from CSV
+  loadSounds().then(() => {
+    setNowPlaying("Select a sound below");
+  });
+
 })();
 </script>
 </body>
