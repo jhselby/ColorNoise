@@ -693,6 +693,11 @@
       pointer-events: none;
     }
     .hidden { display: none !important; }
+    /* Fix theme selector contrast in dark mode */
+[data-theme="dark"] .themeOption {
+  color: var(--text-secondary);
+}
+
   </style>
 </head>
 
