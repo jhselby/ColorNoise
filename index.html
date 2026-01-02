@@ -3,7 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.2</title>
+  <title>ColorNoise v1.11.0</title>
+
+  <!-- Cache control -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -687,13 +693,6 @@
       pointer-events: none;
     }
     .hidden { display: none !important; }
-
-    /* Fix theme selector contrast in dark mode */
-    [data-theme="dark"] .themeOption {
-      color: rgba(232,238,252,0.85) !important;
-      -webkit-text-fill-color: rgba(232,238,252,0.85) !important; /* Safari/iOS */
-      opacity: 1 !important;
-    }
   </style>
 </head>
 
@@ -704,8 +703,8 @@
     <div class="headerTop">
       <div class="headerLeft">
         <div class="logo">
-          <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
-          <span class="version">v1.2</span>
+          <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
+          <span class="version">v1.11.0</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -774,10 +773,10 @@
         
         <div class="settingRow">
           <div class="settingLabel">Theme</div>
-          <div class="themeSelector" id="themeSelector" role="radiogroup" aria-label="Theme">
-            <button class="themeOption" data-theme="light" role="radio" aria-checked="false">Light</button>
-            <button class="themeOption" data-theme="dark" role="radio" aria-checked="false">Dark</button>
-            <button class="themeOption" data-theme="system" role="radio" aria-checked="false">System</button>
+          <div class="themeSelector" id="themeSelector">
+            <button class="themeOption" data-theme="light">Light</button>
+            <button class="themeOption" data-theme="dark">Dark</button>
+            <button class="themeOption" data-theme="system">System</button>
           </div>
         </div>
 
@@ -892,7 +891,6 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
-  const ASSET_VERSION = "1.2"; // bump when publishing changes
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -921,48 +919,46 @@
   let SOURCES_BY_CATEGORY = {};
 
   // CSV parsing functions
-  // RFC4180-ish CSV parser (supports commas/newlines in quotes, and escaped quotes "")
   function parseCSV(text) {
-    const rows = parseCSVRows(text);
-    if (rows.length < 2) return [];
-
-    const header = rows[0].map(h => (h || "").trim());
-    const includeIdx  = header.findIndex(h => h.toLowerCase().includes("include"));
-    const categoryIdx = header.findIndex(h => h.toLowerCase() === "category");
-    const titleIdx    = header.findIndex(h => h.toLowerCase() === "title");
-    const tagsIdx     = header.findIndex(h => h.toLowerCase() === "tags");
-    const urlIdx      = header.findIndex(h => h.toLowerCase() === "url");
-    const volumeIdx   = header.findIndex(h => h.toLowerCase() === "volume");
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    
+    const header = parseCSVLine(lines[0]);
+    const includeIdx = header.findIndex(h => h.toLowerCase().includes('include'));
+    const categoryIdx = header.findIndex(h => h.toLowerCase() === 'category');
+    const titleIdx = header.findIndex(h => h.toLowerCase() === 'title');
+    const tagsIdx = header.findIndex(h => h.toLowerCase() === 'tags');
+    const urlIdx = header.findIndex(h => h.toLowerCase() === 'url');
+    const volumeIdx = header.findIndex(h => h.toLowerCase() === 'volume');
 
     const sounds = [];
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row || row.length === 0) continue;
+    for (let i = 1; i < lines.length; i++) {
+      const row = parseCSVLine(lines[i]);
+      if (row.length < 4) continue;
 
-      const include = ((row[includeIdx] || "") + "").trim().toUpperCase();
-      if (includeIdx >= 0 && include !== "Y") continue;
+      const include = (row[includeIdx] || '').trim().toUpperCase();
+      if (include !== 'Y') continue;
 
-      const category = ((row[categoryIdx] || "") + "").trim();
-      const title    = ((row[titleIdx] || "") + "").trim();
-      const tags     = ((row[tagsIdx] || "") + "").trim();
-      const url      = ((row[urlIdx] || "") + "").trim();
-
-      const volumeStr = volumeIdx >= 0 ? (((row[volumeIdx] || "") + "").trim()) : "";
+      const category = (row[categoryIdx] || '').trim();
+      const title = (row[titleIdx] || '').trim();
+      const tags = (row[tagsIdx] || '').trim();
+      const url = (row[urlIdx] || '').trim();
+      const volumeStr = volumeIdx >= 0 ? (row[volumeIdx] || '').trim() : '';
       const volume = volumeStr ? parseFloat(volumeStr) : 1.0;
 
       if (!title || !url) continue;
 
-      const key = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+      const key = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
       const color = detectColor(title, tags);
-      const headphones = (category || "").toUpperCase().includes("BINAURAL") ||
-                        tags.toLowerCase().includes("headphones") ||
-                        tags.toLowerCase().includes("binaural");
+      const headphones = category.toUpperCase().includes('BINAURAL') || 
+                        tags.toLowerCase().includes('headphones') ||
+                        tags.toLowerCase().includes('binaural');
 
       sounds.push({
         key,
         name: title,
         color,
-        desc: tags.split(",").slice(0, 3).map(t => t.trim()).join(", ") || category,
+        desc: tags.split(',').slice(0, 3).map(t => t.trim()).join(', ') || category,
         url,
         category,
         volume: isNaN(volume) ? 1.0 : volume,
@@ -972,51 +968,25 @@
     return sounds;
   }
 
-  function parseCSVRows(text) {
-    const rows = [];
-    let row = [];
-    let field = "";
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '';
     let inQuotes = false;
-
-    text = (text || "").replace(/
-/g, "
-").replace(//g, "
-");
-
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-
-      if (inQuotes) {
-        if (c === '"') {
-          if (text[i + 1] === '"') { field += '"'; i++; }
-          else inQuotes = false;
-        } else {
-          field += c;
-        }
-        continue;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
       }
-
-      if (c === '"') { inQuotes = true; continue; }
-
-      if (c === ",") { row.push(field); field = ""; continue; }
-
-      if (c === "
-") {
-        row.push(field); field = "";
-        if (!row.every(v => (v || "").trim() === "")) rows.push(row);
-        row = [];
-        continue;
-      }
-
-      field += c;
     }
-
-    row.push(field);
-    if (!row.every(v => (v || "").trim() === "")) rows.push(row);
-
-    return rows;
+    result.push(current);
+    return result.map(s => s.trim().replace(/^"|"$/g, ''));
   }
-
 
   function detectColor(title, tags) {
     const text = (title + ' ' + tags).toLowerCase();
@@ -1104,7 +1074,7 @@
     const containerEl = document.getElementById('categoriesContainer');
 
     try {
-      const response = await fetch(CSV_URL + '?v=' + encodeURIComponent(ASSET_VERSION));
+      const response = await fetch(CSV_URL + '?t=' + Date.now());
       if (!response.ok) throw new Error('HTTP ' + response.status);
       
       const text = await response.text();
@@ -1181,21 +1151,18 @@
 
   function updateThemeSelector() {
     document.querySelectorAll(".themeOption").forEach(btn => {
-      const isActive = btn.dataset.theme === settings.theme;
-      btn.classList.toggle("active", isActive);
-      btn.setAttribute("aria-checked", isActive ? "true" : "false");
+      btn.classList.toggle("active", btn.dataset.theme === settings.theme);
     });
   }
 
-  // Listen for system theme changes (with Safari fallback)
-  const mql = window.matchMedia("(prefers-color-scheme: dark)");
-  const onSystemThemeChange = () => {
-    if (settings.theme === "system") applyTheme("system");
-  };
-  if (typeof mql.addEventListener === "function") mql.addEventListener("change", onSystemThemeChange);
-  else if (typeof mql.addListener === "function") mql.addListener(onSystemThemeChange);
+  // Listen for system theme changes
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (settings.theme === "system") {
+      applyTheme("system");
+    }
+  });
 
-// Apply initial theme
+  // Apply initial theme
   applyTheme(settings.theme);
 
 
@@ -1271,24 +1238,6 @@
   const minsEl = document.getElementById("mins");
 
   // Settings drawer elements
-  // ---- Settings accessibility helpers (focus trap) ----
-  let lastFocusedEl = null;
-  function getFocusable(container) {
-    return Array.from(container.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    )).filter(el => !el.disabled && el.offsetParent !== null);
-  }
-  function trapFocus(e) {
-    if (e.key !== "Tab") return;
-    if (settingsOverlay.classList.contains("hidden")) return;
-    const focusables = getFocusable(settingsOverlay);
-    if (focusables.length === 0) return;
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-  }
-
   const settingsBtn = document.getElementById("settingsBtn");
   const settingsOverlay = document.getElementById("settingsOverlay");
   const settingsClose = document.getElementById("settingsClose");
@@ -1897,13 +1846,9 @@
 
   // ---- Settings drawer wiring ----
   function openSettings() {
-    lastFocusedEl = document.activeElement;
-    document.addEventListener("keydown", trapFocus);
     settingsOverlay.classList.remove("hidden");
     settingsOverlay.setAttribute("aria-hidden", "false");
     syncSettingsUI();
-    const focusables = getFocusable(settingsOverlay);
-    if (focusables[0]) focusables[0].focus();
   if (IS_IOS) {
     settings.enableCrossfade = false;
     saveSettings();
@@ -1916,10 +1861,7 @@
   function closeSettings() {
     settingsOverlay.classList.add("hidden");
     settingsOverlay.setAttribute("aria-hidden", "true");
-    document.removeEventListener("keydown", trapFocus);
-    if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
-    lastFocusedEl = null;
-
+    
     // If normalization settings changed, reload now
     if (pendingReload) {
       pendingReload = false;
@@ -2290,16 +2232,10 @@
     }
   }
 
-  // Fix initial layout (respond to header/favorites size changes)
-  if ("ResizeObserver" in window) {
-    const ro = new ResizeObserver(() => updateLayout());
-    const header = document.querySelector(".fixedHeader");
-    if (header) ro.observe(header);
-    if (favoritesSection) ro.observe(favoritesSection);
-  } else {
-    window.addEventListener("load", () => updateLayout());
-    setTimeout(() => updateLayout(), 250);
-  }
+  // Fix initial layout (fonts/audio controls can change header height after first paint)
+  window.addEventListener("load", () => updateLayout());
+  setTimeout(() => updateLayout(), 250);
+  setTimeout(() => updateLayout(), 1000);
 
   // Check sound engine status (Internet Archive) — reliable media probe
   function checkArchiveStatus() {
