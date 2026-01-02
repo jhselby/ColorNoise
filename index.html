@@ -847,7 +847,7 @@
           <div class="settingLabel">Fade out when sleep timer ends</div>
           <div class="inlineControls">
             <div class="durationControl disabled" id="fadeOutDurationControl">
-              <input type="range" id="fadeOutSec" min="0" max="12" step="0.5">
+              <input type="range" id="fadeOutSec" min="0" max="6" step="0.5">
               <div class="settingValue" id="fadeOutSecVal"></div>
             </div>
             <label class="switch">
@@ -1476,19 +1476,22 @@
 
   function fadeOutAndStop(playerEl, gainNode, seconds) {
     return new Promise((resolve) => {
-      if (!audioCtx || !gainNode || seconds <= 0) {
+      if (!audioCtx || !masterGain || seconds <= 0) {
         try { playerEl.pause(); } catch {}
         resolve();
         return;
       }
       
-      // Use the exact same pattern as crossfade (which works smoothly)
-      rampGain(gainNode, gainNode.gain.value, 0, seconds);
+      // Fade the MASTER gain instead of per-player gain
+      // This avoids any discontinuity at the per-player level
+      const startVol = masterGain.gain.value;
+      rampGain(masterGain, startVol, 0, seconds);
       
       setTimeout(() => {
-        // Clamp to silence and stop - same as crossfade
-        gainNode.gain.value = 0;
+        masterGain.gain.value = 0;
         try { playerEl.pause(); } catch {}
+        // Restore master gain for future plays
+        masterGain.gain.value = startVol;
         resolve();
       }, Math.ceil(seconds * 1000));
     });
