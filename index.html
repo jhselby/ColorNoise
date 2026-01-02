@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.10.17</title>
+  <title>ColorNoise v1.11.0</title>
 
   <!-- Cache control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -42,6 +42,8 @@
       --switch-knob: rgba(232,238,252,0.92);
       --switch-checked-bg: rgba(120,180,255,0.35);
       --overlay-bg: rgba(0,0,0,0.5);
+      --theme-btn-text: rgba(232,238,252,0.6);
+      --theme-btn-text-hover: rgba(232,238,252,0.85);
       color-scheme: dark;
     }
 
@@ -71,6 +73,8 @@
       --switch-knob: #fff;
       --switch-checked-bg: rgba(60,120,200,0.5);
       --overlay-bg: rgba(0,0,0,0.3);
+      --theme-btn-text: rgba(26,31,46,0.55);
+      --theme-btn-text-hover: rgba(26,31,46,0.75);
       color-scheme: light;
     }
 
@@ -286,6 +290,40 @@
     }
     .content.with-favorites {
       padding-top: 280px; /* extra space when favorites visible */
+    }
+
+    /* Loading state */
+    .loadingState {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-tertiary);
+    }
+    .loadingState .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border-secondary);
+      border-top-color: var(--text-secondary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .errorState {
+      text-align: center;
+      padding: 40px 20px;
+      color: #e74c3c;
+    }
+    .errorState button {
+      margin-top: 12px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid #e74c3c;
+      background: transparent;
+      color: #e74c3c;
+      font-weight: 600;
+      cursor: pointer;
     }
     
     .sectionTitle {
@@ -580,14 +618,14 @@
       border-radius: 8px;
       border: none;
       background: transparent;
-      color: var(--text-tertiary);
+      color: var(--theme-btn-text);
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       transition: background 0.15s, color 0.15s;
     }
     .themeOption:hover {
-      color: var(--text-secondary);
+      color: var(--theme-btn-text-hover);
     }
     .themeOption.active {
       background: var(--bg-button);
@@ -700,7 +738,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.10.17</span>
+          <span class="version">v1.11.0</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -874,37 +912,17 @@
   </div>
 
   <!-- Scrollable stations -->
-  <div class="content">
-    <div class="sectionTitle" data-section="core">
-      <span class="collapseBtn">▼</span>
-      Core Colors
+  <div class="content" id="mainContent">
+    <div class="loadingState" id="loadingState">
+      <div class="spinner"></div>
+      <div>Loading sounds...</div>
     </div>
-    <div class="grid" id="coreGrid"></div>
-    
-    <div class="sectionTitle" data-section="blends">
-      <span class="collapseBtn">▼</span>
-      Nature + Noise Blends
+    <div class="errorState hidden" id="errorState">
+      <div>Failed to load sounds</div>
+      <div id="errorMessage" style="font-size:12px; margin-top:8px; opacity:0.7;"></div>
+      <button onclick="location.reload()">Retry</button>
     </div>
-    <div class="grid" id="blendsGrid"></div>
-    
-    <div class="sectionTitle" data-section="binaural">
-      <span class="collapseBtn">▼</span>
-      Binaural Beats
-      <span class="sectionNote">🎧 headphones required</span>
-    </div>
-    <div class="grid" id="binauralGrid"></div>
-    
-    <div class="sectionTitle" data-section="nature">
-      <span class="collapseBtn">▼</span>
-      Nature Sounds
-    </div>
-    <div class="grid" id="natureGrid"></div>
-    
-    <div class="sectionTitle" data-section="mechanical">
-      <span class="collapseBtn">▼</span>
-      🚀 Mechanical / Sci-Fi
-    </div>
-    <div class="grid" id="mechanicalGrid"></div>
+    <div id="categoriesContainer"></div>
   </div>
 
 <script>
@@ -2407,6 +2425,24 @@
     const t = setTimeout(() => finish(false), 8000);
     probe.addEventListener("canplaythrough", () => { clearTimeout(t); finish(true); }, { once: true });
     probe.addEventListener("loadedmetadata", () => { clearTimeout(t); finish(true); }, { once: true });
+    probe.addEventListener("error", () => { clearTimeout(t); finish(false); }, { once: true });
+
+    probe.src = testUrl;
+    probe.load();
+  }
+
+  // Keep layout correct on resize/orientation change
+  window.addEventListener("resize", () => updateLayout());
+
+  // Load sounds from CSV
+  loadSounds().then(() => {
+    setNowPlaying("Select a sound below");
+  });
+
+})();
+</script>
+</body>
+</html> finish(true); }, { once: true });
     probe.addEventListener("error", () => { clearTimeout(t); finish(false); }, { once: true });
 
     probe.src = testUrl;
