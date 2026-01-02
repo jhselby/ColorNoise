@@ -3,14 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.11.0</title>
+  <title>ColorNoise v1.2</title>
 
-  <!-- Cache control -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- Cache control -->  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0b0f18">
@@ -703,8 +698,8 @@
     <div class="headerTop">
       <div class="headerLeft">
         <div class="logo">
-          <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
-          <span class="version">v1.11.0</span>
+          <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
+          <span class="version">v1.2</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -891,6 +886,7 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
+  const ASSET_VERSION = "1.2"; // bump when publishing changes
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1074,7 +1070,7 @@
     const containerEl = document.getElementById('categoriesContainer');
 
     try {
-      const response = await fetch(CSV_URL + '?t=' + Date.now());
+      const response = await fetch(CSV_URL + '?v=' + encodeURIComponent(ASSET_VERSION));
       if (!response.ok) throw new Error('HTTP ' + response.status);
       
       const text = await response.text();
@@ -1156,11 +1152,14 @@
   }
 
   // Listen for system theme changes
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  const mql = window.matchMedia("(prefers-color-scheme: dark)");
+  const onSystemThemeChange = () => {
     if (settings.theme === "system") {
       applyTheme("system");
     }
-  });
+  };
+  if (typeof mql.addEventListener === "function") mql.addEventListener("change", onSystemThemeChange);
+  else if (typeof mql.addListener === "function") mql.addListener(onSystemThemeChange);
 
   // Apply initial theme
   applyTheme(settings.theme);
