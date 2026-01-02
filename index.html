@@ -1481,16 +1481,30 @@
         resolve();
         return;
       }
+      
+      const t0 = audioCtx.currentTime;
       const from = gainNode.gain.value;
-      rampGain(gainNode, from, 0, seconds);
-      // Wait for ramp to complete, then force gain to zero and pause
-      // Add 50ms buffer to ensure ramp is truly done before cutting audio
+      
+      // Cancel any existing scheduled values
+      gainNode.gain.cancelScheduledValues(t0);
+      gainNode.gain.setValueAtTime(from, t0);
+      
+      // Ramp to near-zero (exponential can't go to exactly 0)
+      // Using linear ramp to a very small value
+      gainNode.gain.linearRampToValueAtTime(0.0001, t0 + seconds);
+      
+      // After the ramp completes, force to true zero and pause
       setTimeout(() => {
+        // Force immediate silence
         gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-        gainNode.gain.value = 0; // Force to zero to prevent any blip
-        try { playerEl.pause(); } catch {}
-        resolve();
-      }, Math.ceil(seconds * 1000) + 50);
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        
+        // Wait one more animation frame to ensure the zero is applied
+        requestAnimationFrame(() => {
+          try { playerEl.pause(); } catch {}
+          resolve();
+        });
+      }, Math.ceil(seconds * 1000) + 30);
     });
   }
 
