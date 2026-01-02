@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.21</title>
+  <title>ColorNoise v1.21.1</title>
 
   <!-- Cache control -->  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -742,7 +742,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
-          <span class="version">v1.21</span>
+          <span class="version">v1.21.1</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -941,7 +941,7 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
-  const ASSET_VERSION = "1.21"; // bump when publishing changes
+  const ASSET_VERSION = "1.21.1"; // bump when publishing changes
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1482,17 +1482,24 @@
         return;
       }
       
-      // Fade the MASTER gain instead of per-player gain
-      // This avoids any discontinuity at the per-player level
+      // Fade the MASTER gain
       const startVol = masterGain.gain.value;
       rampGain(masterGain, startVol, 0, seconds);
       
       setTimeout(() => {
+        // Force master to zero
         masterGain.gain.value = 0;
-        try { playerEl.pause(); } catch {}
-        // Restore master gain for future plays
-        masterGain.gain.value = startVol;
-        resolve();
+        // Also mute the element itself as a belt-and-suspenders approach
+        try { playerEl.volume = 0; } catch {}
+        
+        // Wait a beat for the silence to propagate through the audio pipeline
+        setTimeout(() => {
+          try { playerEl.pause(); } catch {}
+          // Restore for future plays
+          masterGain.gain.value = startVol;
+          try { playerEl.volume = 1; } catch {}
+          resolve();
+        }, 50);
       }, Math.ceil(seconds * 1000));
     });
   }
