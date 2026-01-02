@@ -899,6 +899,7 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
+  const ASSET_VERSION = "1.3.2";
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1237,37 +1238,6 @@
   const playerB = document.getElementById("playerB");
   const players = [playerA, playerB];
 
-  let programmaticPause = false;
-
-  // Fade-out when stopping via the native audio pause button
-  function attachPauseFadeHandler(p) {
-    if (!p) return;
-    p.addEventListener("pause", async () => {
-      if (IS_IOS) return;
-      if (programmaticPause) return;
-      if (!currentKey) return;          // nothing active
-      if (p !== activePlayer()) return; // not the active player
-      if (!settings.enableFadeOnStop) return;
-      if (!settings.enableFadeOut || settings.fadeOutSec <= 0) return;
-
-      // Resume (pause click is a user gesture, so this is typically allowed), then fade-stop cleanly.
-      try {
-        resumeAudioContext();
-        const pr = p.play();
-        if (pr !== undefined) await pr;
-      } catch {
-        // If we can't resume, fall back to abrupt stop but keep UI consistent
-        await stopPlayback("Select a sound", false);
-        return;
-      }
-
-      await stopPlayback("Select a sound", true);
-    });
-  }
-  attachPauseFadeHandler(playerA);
-  attachPauseFadeHandler(playerB);
-
-
   const nowPlayingTrack = document.getElementById("nowPlayingTrack");
   const favoritesSection = document.getElementById("favoritesSection");
   const favGrid = document.getElementById("favGrid");
@@ -1451,52 +1421,24 @@
   function rampGain(g, from, to, seconds) {
     if (!audioCtx || !g) return;
     const t0 = audioCtx.currentTime;
-    const dur = Math.max(0, seconds || 0);
-
-    // Hold current scheduled value if supported (reduces clicks)
-    if (typeof g.gain.cancelAndHoldAtTime === "function") {
-      g.gain.cancelAndHoldAtTime(t0);
-    } else {
-      g.gain.cancelScheduledValues(t0);
-      // Use the current value if possible; fall back to "from"
-      const cur = (typeof g.gain.value === "number") ? g.gain.value : from;
-      g.gain.setValueAtTime(cur, t0);
-    }
-
-    // If fading to zero, ramp to a tiny value then set hard zero at the end to avoid end-clicks.
-    if (to === 0) {
-      const nearZero = 0.0001;
-      g.gain.linearRampToValueAtTime(nearZero, t0 + dur);
-      g.gain.setValueAtTime(0, t0 + dur);
-    } else {
-      g.gain.linearRampToValueAtTime(to, t0 + dur);
-    }
+    g.gain.cancelScheduledValues(t0);
+    g.gain.setValueAtTime(from, t0);
+    g.gain.linearRampToValueAtTime(to, t0 + Math.max(0, seconds));
   }
 
   function fadeOutAndStop(playerEl, gainNode, seconds) {
     return new Promise((resolve) => {
-      if (!audioCtx || !gainNode || (seconds || 0) <= 0) {
-        programmaticPause = true;
+      if (!audioCtx || !gainNode || seconds <= 0) {
         try { playerEl.pause(); } catch {}
-        programmaticPause = false;
         resolve();
         return;
       }
-
       const from = gainNode.gain.value;
       rampGain(gainNode, from, 0, seconds);
-
       setTimeout(() => {
-        programmaticPause = true;
         try { playerEl.pause(); } catch {}
-        programmaticPause = false;
-
-        // Restore gain after the element settles (prevents pop when reusing the player)
-        setTimeout(() => {
-          try { gainNode.gain.value = 1; } catch {}
-          resolve();
-        }, 60);
-      }, Math.ceil(seconds * 1000) + 40);
+        resolve();
+      }, Math.ceil(seconds * 1000));
     });
   }
 
@@ -1505,9 +1447,7 @@
 
     if (IS_IOS) {
       const p = activePlayer();
-      programmaticPause = true;
       try { p.pause(); } catch {}
-      programmaticPause = false;
       try { p.removeAttribute("src"); p.load(); } catch {}
       setNowPlaying(reasonText);
       setActive(null);
@@ -1524,10 +1464,10 @@
 
     if (useFade && settings.enableFadeOut) {
       await fadeOutAndStop(p, gains[activeIdx], settings.fadeOutSec);
-} else {
-      programmaticPause = true;
+      // restore gain for future plays
+      gains[activeIdx].gain.value = 1;
+    } else {
       try { p.pause(); } catch {}
-      programmaticPause = false;
     }
 
     currentKey = null;
