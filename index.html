@@ -693,10 +693,13 @@
       pointer-events: none;
     }
     .hidden { display: none !important; }
-    /* Fix theme selector contrast in dark mode */
+/* Fix theme selector contrast in dark mode */
 [data-theme="dark"] .themeOption {
-  color: var(--text-secondary);
+  color: rgba(232,238,252,0.85) !important;
+  -webkit-text-fill-color: rgba(232,238,252,0.85) !important; /* Safari/iOS */
+  opacity: 1 !important;
 }
+
 
   </style>
 </head>
