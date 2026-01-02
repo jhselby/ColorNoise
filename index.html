@@ -3,9 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.2</title>
+  <title>ColorNoise v1.3</title>
 
-  <!-- Cache control -->  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- Cache control -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0b0f18">
@@ -698,8 +703,8 @@
     <div class="headerTop">
       <div class="headerLeft">
         <div class="logo">
-          <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
-          <span class="version">v1.2</span>
+          <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank">Color Noise ↗</a>
+          <span class="version">v1.3</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -810,6 +815,14 @@
         </div>
         <div class="settingRow">
           <div class="settingLabel">Fade-out duration</div>
+        <div class="settingRow">
+          <div class="settingLabel">Fade out when stopping a stream</div>
+          <label class="switch">
+            <input type="checkbox" id="enableFadeOnStop">
+            <span class="slider"></span>
+          </label>
+        </div>
+
           <div class="settingControl">
             <input type="range" id="fadeOutSec" min="0" max="12" step="0.5">
             <div class="settingValue" id="fadeOutSecVal"></div>
@@ -886,7 +899,6 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
-  const ASSET_VERSION = "1.2"; // bump when publishing changes
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1070,7 +1082,7 @@
     const containerEl = document.getElementById('categoriesContainer');
 
     try {
-      const response = await fetch(CSV_URL + '?v=' + encodeURIComponent(ASSET_VERSION));
+      const response = await fetch(CSV_URL + '?t=' + Date.now());
       if (!response.ok) throw new Error('HTTP ' + response.status);
       
       const text = await response.text();
@@ -1118,6 +1130,7 @@
       crossfadeSec: 1.5,
       enableFadeOut: true,
       fadeOutSec: 2.0,
+      enableFadeOnStop: true,
       masterVol: 1.0,
       showSleepTimer: true,
       showMainVolume: true,
@@ -1152,14 +1165,11 @@
   }
 
   // Listen for system theme changes
-  const mql = window.matchMedia("(prefers-color-scheme: dark)");
-  const onSystemThemeChange = () => {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     if (settings.theme === "system") {
       applyTheme("system");
     }
-  };
-  if (typeof mql.addEventListener === "function") mql.addEventListener("change", onSystemThemeChange);
-  else if (typeof mql.addListener === "function") mql.addListener(onSystemThemeChange);
+  });
 
   // Apply initial theme
   applyTheme(settings.theme);
@@ -1244,6 +1254,7 @@
   const crossfadeSecEl = document.getElementById("crossfadeSec");
   const crossfadeSecVal = document.getElementById("crossfadeSecVal");
   const enableFadeOutEl = document.getElementById("enableFadeOut");
+  const enableFadeOnStopEl = document.getElementById("enableFadeOnStop");
   const fadeOutSecEl = document.getElementById("fadeOutSec");
   const fadeOutSecVal = document.getElementById("fadeOutSecVal");
   const masterVolEl = document.getElementById("masterVol");
@@ -1471,7 +1482,7 @@
     if (IS_IOS) {
       // Toggle behavior: if same track is playing, stop.
       if (currentKey === item.key && !activePlayer().paused) {
-        await stopPlayback("Select a sound", false);
+        await stopPlayback("Select a sound", settings.enableFadeOnStop);
         return;
       }
 
@@ -1526,7 +1537,7 @@
 
     // Toggle behavior: if same track is playing, stop.
     if (currentKey === item.key && !activePlayer().paused) {
-      await stopPlayback("Select a sound", false);
+      await stopPlayback("Select a sound", settings.enableFadeOnStop);
       return;
     }
 
@@ -1888,6 +1899,7 @@
     crossfadeSecVal.textContent = fmtSec(settings.crossfadeSec);
 
     enableFadeOutEl.checked = !!settings.enableFadeOut;
+    if (enableFadeOnStopEl) enableFadeOnStopEl.checked = !!settings.enableFadeOnStop;
     fadeOutSecEl.value = settings.fadeOutSec;
     fadeOutSecVal.textContent = fmtSec(settings.fadeOutSec);
 
@@ -1973,6 +1985,14 @@
     crossfadeSecVal.textContent = fmtSec(settings.crossfadeSec);
     saveSettings();
   };
+  enableFadeOutEl.onchange = () => {
+  };
+
+  if (enableFadeOnStopEl) enableFadeOnStopEl.onchange = () => {
+    settings.enableFadeOnStop = enableFadeOnStopEl.checked;
+    saveSettings();
+  };
+
   enableFadeOutEl.onchange = () => {
     settings.enableFadeOut = enableFadeOutEl.checked;
     saveSettings();
