@@ -291,40 +291,6 @@
     .content.with-favorites {
       padding-top: 280px; /* extra space when favorites visible */
     }
-
-    /* Loading state */
-    .loadingState {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-tertiary);
-    }
-    .loadingState .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid var(--border-secondary);
-      border-top-color: var(--text-secondary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 12px;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .errorState {
-      text-align: center;
-      padding: 40px 20px;
-      color: #e74c3c;
-    }
-    .errorState button {
-      margin-top: 12px;
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: 1px solid #e74c3c;
-      background: transparent;
-      color: #e74c3c;
-      font-weight: 600;
-      cursor: pointer;
-    }
     
     .sectionTitle {
       font-size: 13px;
@@ -914,19 +880,27 @@
   <!-- Scrollable stations -->
   <div class="content" id="mainContent">
     <div class="loadingState" id="loadingState">
-      <div class="spinner"></div>
-      <div>Loading sounds...</div>
-    </div>
-    <div class="errorState hidden" id="errorState">
-      <div>Failed to load sounds</div>
-      <div id="errorMessage" style="font-size:12px; margin-top:8px; opacity:0.7;"></div>
-      <button onclick="location.reload()">Retry</button>
+      <div style="text-align:center; padding:40px; color:var(--text-tertiary);">
+        <div style="font-size:14px;">Loading sounds...</div>
+      </div>
     </div>
     <div id="categoriesContainer"></div>
   </div>
 
 <script>
 (() => {
+  // CSV URL - loads from same directory
+  const CSV_URL = "sounds.csv";
+
+  // Hardcoded category order (new categories appear alphabetically after these)
+  const CATEGORY_ORDER = [
+    "CORE COLORS",
+    "NATURE + NOISE BLENDS", 
+    "BINAURAL BEATS",
+    "NATURE SOUNDS",
+    "MECHANICAL / SCI-FI"
+  ];
+
   const COLORS = {
     white: "#ffffff",
     pink: "#ff69b4",
@@ -940,311 +914,192 @@
     cyan: "#00bcd4"
   };
 
-  const SOURCES_CORE = [
-    {
-      key: "white",
-      name: "White",
-      color: COLORS.white,
-      desc: "Broad spectrum hiss. Best for masking sudden noises. 1 hour.",
-      url: "https://archive.org/download/24-hours-lectrofan-sound-and-white-noise-river-128/1%20hour%20lectrofan%20sound%20and%20white%20noise%20river%20128.mp3"
-    },
-    {
-      key: "pink",
-      name: "Pink",
-      color: COLORS.pink,
-      desc: "Smoother than white. Feels like rainfall. 1 hour.",
-      url: "https://archive.org/download/classical-music-mixed-with-pink-noise-for-sleep-and-relax_202105/Soothing%20Deep%20Pink%20Noise%20%201%20Hour.mp3"
-    },
-    {
-      key: "brown",
-      name: "Brown",
-      color: COLORS.brown,
-      desc: "Deep bass-heavy rumble. Very calming. 1 hour.",
-      url: "https://archive.org/download/1-hour-brown-noise-and-flowing-water-320/1%20hour%20Brown%20Noise%20and%20Flowing%20River%20flac.mp3"
-    },
-    {
-      key: "blue",
-      name: "Blue",
-      color: COLORS.blue,
-      desc: "Higher frequencies. Masks high-pitched sounds. 1 hour.",
-      url: "https://archive.org/download/1-hour-texas-river-rapids-and-deep-blue-noise-320/1%20hour%20texas%20river%20rapids%20and%20deep%20blue%20noise%20320.mp3"
-    },
-    {
-      key: "green_pure",
-      name: "Green (Pure)",
-      color: COLORS.green,
-      desc: "Mid-frequency, nature-like. Stress and anxiety relief. 4 hours.",
-      url: "https://archive.org/download/green-noise/Green%20Noise.mp3"
-    },
-    {
-      key: "red",
-      name: "Red (Deep Brown)",
-      color: COLORS.red,
-      desc: "Even deeper than brown. Extremely relaxing. 1 hour.",
-      url: "https://archive.org/download/red-noise_202207/red%20noise.mp3"
-    }
-  ];
+  // Dynamic data from CSV
+  let ALL_SOURCES = [];
+  let SOURCES_BY_CATEGORY = {};
 
-  const SOURCES_BLENDS = [
-    {
-      key: "blue_waterfall",
-      name: "Blue + Waterfall",
-      color: COLORS.blue,
-      desc: "Blue noise with waterfall. 1 hour.",
-      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20sleep%20blue%20noise%20rem%20asmr%20320.mp3"
-    },
-    {
-      key: "red_waterfall",
-      name: "Red + Waterfall",
-      color: COLORS.red,
-      desc: "Deep red/brown with waterfall. 1 hour.",
-      url: "https://archive.org/download/clip-waterfall-relaxing-sleep-rem-asmr/1%20hour%20waterfall%20relaxing%20rem%20red%20noise%20sleep%20320.mp3"
-    },
-    {
-      key: "brown_river",
-      name: "Brown + River",
-      color: COLORS.brown,
-      desc: "Brown noise with peaceful river. 1 hour.",
-      url: "https://archive.org/download/24-hours-peaceful-river-and-brown-noise-vbr/1%20hour%20v3%20river%20and%20brown%20noise%20vbr.mp3"
-    },
-    {
-      key: "brown_rain",
-      name: "Brown + Rain",
-      color: COLORS.brown,
-      desc: "Brown noise with rain. 1 hour.",
-      url: "https://archive.org/download/red-noise_202207/1-rain%20and%20brown%20noise%20-%20320%20-%201%20hour.mp3"
-    },
-    {
-      key: "brown_stream",
-      name: "Brown + Mountain Stream",
-      color: COLORS.brown,
-      desc: "Brown noise with stream and rain. 1 hour.",
-      url: "https://archive.org/download/1-hour-mountain-stream-doubled-and-brown-noise-flac/1%20hour%20mountain%20stream%20-%20rain%20shower%20-%20brown%20noise%20v2%20320.mp3"
-    },
-    {
-      key: "white_roaring",
-      name: "White + Roaring Waterfall",
-      color: COLORS.white,
-      desc: "White noise with powerful waterfall. 10 hours.",
-      url: "https://archive.org/download/1-fan-4-1-hour-flac/Roaring%20Waterfall%20White%20Noise%2010%20hours.mp3"
-    },
-    {
-      key: "brown_terraced",
-      name: "Brown + Terraced Waterfall",
-      color: COLORS.brown,
-      desc: "Brown noise with cascading water. 10 hours.",
-      url: "https://archive.org/download/1-fan-4-1-hour-flac/10%20hours%20terraced%20waterfall%20brown%20noise%20sound%20128.mp3"
-    },
-    {
-      key: "pink_reading",
-      name: "Pink for Focus",
-      color: COLORS.pink,
-      desc: "Pink noise for reading/concentration. 1 hour.",
-      url: "https://archive.org/download/classical-music-mixed-with-pink-noise-for-sleep-and-relax_202105/Pink%20Noise%20Focus%20on%20Reading%20Without%20DistractionsRuido%20RosaLeer%20Sin%20Distracciones.mp3"
-    },
-    {
-      key: "green_stream",
-      name: "Green + Stream",
-      color: COLORS.green,
-      desc: "Mountain stream — nature's green noise. 1 hour.",
-      url: "https://archive.org/download/10-hours-white-noise-river-mountain-stream-doubled-320/1%20Hour%20Calming%20Mountain%20Stream.mp3"
-    },
-    {
-      key: "alpha_brown",
-      name: "Alpha + Brown Noise",
-      color: COLORS.purple,
-      desc: "Alpha waves blended with brown noise. 1 hour.",
-      url: "https://archive.org/download/10-hours-alpha-river-and-brown-noise-flac/1%20hour%20alpha%20river%20and%20brown%20noise%20v1%20flac.mp3"
-    },
-    {
-      key: "turquoise_stream",
-      name: "Turquoise Mountain Stream",
-      color: COLORS.cyan,
-      desc: "Calming turquoise water, mountain stream. 10 hours.",
-      url: "https://archive.org/download/10-hours-alpha-river-and-brown-noise-flac/10%20hours%20Calming%20Turquoise%20Water%2C%20Mountain%20Stream%20vbr.mp3"
-    },
-    {
-      key: "hot_tub",
-      name: "Hot Tub / Jacuzzi",
-      color: COLORS.cyan,
-      desc: "Smooth hot tub bubbling. 1 hour.",
-      url: "https://archive.org/download/10-hours-alpha-river-and-brown-noise-flac/1%20hour%20smooth%20hot%20tub%20128.mp3"
-    }
-  ];
+  // CSV parsing functions
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    
+    const header = parseCSVLine(lines[0]);
+    const includeIdx = header.findIndex(h => h.toLowerCase().includes('include'));
+    const categoryIdx = header.findIndex(h => h.toLowerCase() === 'category');
+    const titleIdx = header.findIndex(h => h.toLowerCase() === 'title');
+    const tagsIdx = header.findIndex(h => h.toLowerCase() === 'tags');
+    const urlIdx = header.findIndex(h => h.toLowerCase() === 'url');
+    const volumeIdx = header.findIndex(h => h.toLowerCase() === 'volume');
 
-  const SOURCES_BINAURAL = [
-    {
-      key: "alpha_focus",
-      name: "Alpha (12 Hz) - Focus",
-      color: COLORS.purple,
-      desc: "Promotes alert relaxation and focus. Use headphones. 1 hour.",
-      url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Alpha%20Waves%20Binaural%20Beats%20%2812%20Hz%29%20%201H.mp3",
-      headphones: true
-    },
-    {
-      key: "theta_meditation",
-      name: "Theta (4 Hz) - Meditation",
-      color: COLORS.purple,
-      desc: "Deep meditation and creativity. Use headphones. 1 hour.",
-      url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Theta%20Waves%20%284%20Hz%29%20%20Deep%20Meditation%20-%201hr%20Binaural%20Beats.mp3",
-      headphones: true
-    },
-    {
-      key: "delta_sleep",
-      name: "Delta (0.5 Hz) - Deep Sleep",
-      color: COLORS.purple,
-      desc: "Deepest relaxation and sleep. Use headphones. 1 hour.",
-      url: "https://archive.org/download/RestorativeSleepMusicBinauralBeatsSleepInTheClouds432Hz/Pure%20Delta%20Waves%20%280.5%20Hz%20Binaural%20Beats%29%20%201H.mp3",
-      headphones: true
-    },
-    {
-      key: "gamma_40hz",
-      name: "Gamma (40 Hz) - Peak Focus",
-      color: COLORS.purple,
-      desc: "40 Hz gamma for focus, calmness, happiness. Use headphones. 1 hour.",
-      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Gamma%20Brain%20Waves%20Meditation%2040%20Hz%20frequency%201%20Hr%20Producing%20Focus%20Calmness%20Happiness.mp3",
-      headphones: true
-    },
-    {
-      key: "anxiety_relief",
-      name: "Anxiety Relief",
-      color: COLORS.purple,
-      desc: "Release stress, worry, overthinking. Use headphones. 1 hour.",
-      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Anxiety%20Relief%20%20Release%20Stress%20Worry%20Overthinking%20%20Binaural%20Beats%20%20Meditation%20Music.mp3",
-      headphones: true
-    },
-    {
-      key: "stay_awake",
-      name: "Stay Awake - Isochronic",
-      color: COLORS.purple,
-      desc: "Isochronic tones for staying awake and alert. 30 min.",
-      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Staying%20Awake%20%20Isochronic%20Tones%20%20Brainwave%20Entrainment%20Meditation.mp3",
-      headphones: true
-    },
-    {
-      key: "beta_30hz",
-      name: "Beta (30 Hz) - Alertness",
-      color: COLORS.purple,
-      desc: "Pure 30 Hz beta binaural for alertness. Use headphones. 30 min.",
-      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/30%20Hz%20Pure%20BINAURAL%20Beat%20%20BETA%20Waves%2070Hz%20Base%20Frequency%20%20Ondas%20Beta%20100.mp3",
-      headphones: true
-    },
-    {
-      key: "deep_alpha_15min",
-      name: "Deep Alpha - Quick",
-      color: COLORS.purple,
-      desc: "Deep alpha binaural meditation. Use headphones. 15 min.",
-      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Deep%20Alpha%20Binaural%20Beats%2015%20min%20Meditation.mp3",
-      headphones: true
-    },
-    {
-      key: "theta_432hz",
-      name: "Theta + 432 Hz - DMT",
-      color: COLORS.purple,
-      desc: "Theta brainwaves with 432 Hz and 60 Hz. Use headphones. 1 hour.",
-      url: "https://archive.org/download/study-music-alpha-waves-studying-music-concentration-music-focus-music-for-work-brain-power/Theta%20Brainwaves%20%20432hz%20%208hz%20%2060hz%20%20%20Pineal%20Gland%20DMT%20Music.mp3",
-      headphones: true
-    }
-  ];
+    const sounds = [];
+    for (let i = 1; i < lines.length; i++) {
+      const row = parseCSVLine(lines[i]);
+      if (row.length < 4) continue;
 
-  const SOURCES_NATURE = [
-    {
-      key: "thunder_beach",
-      name: "Thunder + Rain + Beach",
-      color: COLORS.gray,
-      desc: "Very low rumbling thunder with rain and waves. 8 hours.",
-      url: "https://archive.org/download/relaxingsounds/Thunder%201%208h%20VeryLowRumbling%2CRain%2CWaves-Beach.mp3"
-    },
-    {
-      key: "ocean_night",
-      name: "Ocean Waves (Night)",
-      color: COLORS.blue,
-      desc: "Beach waves from sunset into night. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/Waves%201%2010h%20Beach-Sunset%20into%20Night.mp3"
-    },
-    {
-      key: "rain_medium",
-      name: "Rain (Medium)",
-      color: COLORS.gray,
-      desc: "Medium rain with low gentle thunder. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/Rain%202%20%28Med.%2B%29%2010h%20LowGentleThunder%2C%20Downpour.mp3"
-    },
-    {
-      key: "campfire_crickets",
-      name: "Campfire + Crickets",
-      color: COLORS.orange,
-      desc: "Crackling campfire with crickets and gentle water. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/FIRE%201%2010h%20CracklingCampfire%2CCrickets%2CRainOrRiver-Night.mp3"
-    },
-    {
-      key: "rain_tent",
-      name: "Rain on Tent Canvas",
-      color: COLORS.gray,
-      desc: "Light rain on tent canvas. Medium/gentle, no thunder. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/Rain%206%20%28Light%29%2010h%20on%20Tent%20Canvas%2C%28MediumGentle%29-no%20thunder.mp3"
-    },
-    {
-      key: "rainforest",
-      name: "Rainforest",
-      color: COLORS.green,
-      desc: "Bubbling river, falls, birds, insects, animals. South America. 5 hours.",
-      url: "https://archive.org/download/relaxingsounds/Rainforest%205h%20Bubbling%20River%20Falls(gentle)%2CBirds%2CInsects%2CAnimals-Daytime%2CSouth%20America.mp3"
-    }
-  ];
+      const include = (row[includeIdx] || '').trim().toUpperCase();
+      if (include !== 'Y') continue;
 
-  const SOURCES_MECHANICAL = [
-    {
-      key: "box_fan",
-      name: "Box Fan",
-      color: COLORS.white,
-      desc: "Strong box fan. Classic sleep sound. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/FAN%201%2010h%20Strong%20Box%20Fan.mp3"
-    },
-    {
-      key: "oscillating_fan",
-      name: "Oscillating Fan",
-      color: COLORS.white,
-      desc: "Gentle oscillating fan. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/FAN%202%2010h%20Gentle%2COscillating%20Fan.mp3"
-    },
-    {
-      key: "stereo_fan",
-      name: "Stereo Fan",
-      color: COLORS.white,
-      desc: "Oscillating stereo fan with panning effect. 9 hours.",
-      url: "https://archive.org/download/relaxingsounds/FAN%203%209h%20OscillatingStereoFan.mp3"
-    },
-    {
-      key: "train_horns",
-      name: "Train (with Horns)",
-      color: COLORS.brown,
-      desc: "Low train rumble with horn and crossing bells. 10 hours.",
-      url: "https://archive.org/download/relaxingsounds/Train%201%2010h%20LowRumble%2BHorn%2CCrossingBells.mp3"
-    },
-    {
-      key: "train_quiet",
-      name: "Train (Quiet)",
-      color: COLORS.brown,
-      desc: "Medium-lite train rumble. No horns or bells. 9 hours.",
-      url: "https://archive.org/download/relaxingsounds/Train%203%209h%20Med.LiteRumble-NoHornsOrBells.mp3"
-    },
-    {
-      key: "film_projector",
-      name: "Film Projector",
-      color: COLORS.orange,
-      desc: "Gentle film projector clicking and whirring. 9 hours.",
-      url: "https://archive.org/download/relaxingsounds/Film%20Projector%209h%20gentle%20v2.mp3"
-    },
-    {
-      key: "starship_engine",
-      name: "Starship Engine",
-      color: COLORS.blue,
-      desc: "Star Trek TNG warp engine ambient drone. Sleep in space. 24 hours.",
-      url: "https://archive.org/download/AmbientEngineNoiseidlingFor24Hrs_614/AmbientEngineNoiseidlingFor24Hrs.mp3"
-    }
-  ];
+      const category = (row[categoryIdx] || '').trim();
+      const title = (row[titleIdx] || '').trim();
+      const tags = (row[tagsIdx] || '').trim();
+      const url = (row[urlIdx] || '').trim();
+      const volumeStr = volumeIdx >= 0 ? (row[volumeIdx] || '').trim() : '';
+      const volume = volumeStr ? parseFloat(volumeStr) : 1.0;
 
-  const ALL_SOURCES = [...SOURCES_CORE, ...SOURCES_BLENDS, ...SOURCES_BINAURAL, ...SOURCES_NATURE, ...SOURCES_MECHANICAL];
+      if (!title || !url) continue;
+
+      const key = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const color = detectColor(title, tags);
+      const headphones = category.toUpperCase().includes('BINAURAL') || 
+                        tags.toLowerCase().includes('headphones') ||
+                        tags.toLowerCase().includes('binaural');
+
+      sounds.push({
+        key,
+        name: title,
+        color,
+        desc: tags.split(',').slice(0, 3).map(t => t.trim()).join(', ') || category,
+        url,
+        category,
+        volume: isNaN(volume) ? 1.0 : volume,
+        headphones
+      });
+    }
+    return sounds;
+  }
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current);
+    return result.map(s => s.trim().replace(/^"|"$/g, ''));
+  }
+
+  function detectColor(title, tags) {
+    const text = (title + ' ' + tags).toLowerCase();
+    if (text.includes('white')) return COLORS.white;
+    if (text.includes('pink')) return COLORS.pink;
+    if (text.includes('brown')) return COLORS.brown;
+    if (text.includes('blue')) return COLORS.blue;
+    if (text.includes('green') || text.includes('turquoise')) return COLORS.green;
+    if (text.includes('red')) return COLORS.red;
+    if (text.includes('alpha') || text.includes('theta') || text.includes('delta') || 
+        text.includes('gamma') || text.includes('beta') || text.includes('binaural') ||
+        text.includes('isochronic')) return COLORS.purple;
+    if (text.includes('fire') || text.includes('campfire') || text.includes('projector')) return COLORS.orange;
+    if (text.includes('rain') || text.includes('thunder') || text.includes('fan')) return COLORS.gray;
+    if (text.includes('ocean') || text.includes('wave') || text.includes('starship') || 
+        text.includes('engine') || text.includes('space')) return COLORS.blue;
+    if (text.includes('forest') || text.includes('nature') || text.includes('rainforest') ||
+        text.includes('stream') || text.includes('river')) return COLORS.green;
+    if (text.includes('train')) return COLORS.brown;
+    if (text.includes('hot tub') || text.includes('jacuzzi') || text.includes('cyan')) return COLORS.cyan;
+    return COLORS.gray;
+  }
+
+  function organizeSounds(sounds) {
+    const byCategory = {};
+    sounds.forEach(sound => {
+      const cat = sound.category || 'OTHER';
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(sound);
+    });
+    return byCategory;
+  }
+
+  function getOrderedCategories(byCategory) {
+    const knownCats = CATEGORY_ORDER.filter(c => byCategory[c]);
+    const unknownCats = Object.keys(byCategory)
+      .filter(c => !CATEGORY_ORDER.includes(c))
+      .sort();
+    return [...knownCats, ...unknownCats];
+  }
+
+  function renderCategories() {
+    const container = document.getElementById('categoriesContainer');
+    container.innerHTML = '';
+
+    const orderedCats = getOrderedCategories(SOURCES_BY_CATEGORY);
+
+    orderedCats.forEach(category => {
+      const sectionKey = category.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      
+      if (collapsedSections[sectionKey] === undefined) {
+        collapsedSections[sectionKey] = sectionKey !== 'core_colors';
+      }
+
+      const isCollapsed = collapsedSections[sectionKey];
+      const isBinaural = category.toUpperCase().includes('BINAURAL');
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'sectionTitle' + (isCollapsed ? ' collapsed' : '');
+      titleEl.dataset.section = sectionKey;
+      titleEl.innerHTML = `
+        <span class="collapseBtn">▼</span>
+        ${category}
+        ${isBinaural ? '<span class="sectionNote">🎧 headphones required</span>' : ''}
+      `;
+
+      const gridEl = document.createElement('div');
+      gridEl.className = 'grid' + (isCollapsed ? ' hidden' : '');
+      gridEl.id = sectionKey + 'Grid';
+
+      container.appendChild(titleEl);
+      container.appendChild(gridEl);
+
+      titleEl.onclick = () => {
+        const collapsed = titleEl.classList.toggle('collapsed');
+        gridEl.classList.toggle('hidden', collapsed);
+        collapsedSections[sectionKey] = collapsed;
+        localStorage.setItem(LS_COL, JSON.stringify(collapsedSections));
+      };
+    });
+  }
+
+  async function loadSounds() {
+    const loadingEl = document.getElementById('loadingState');
+    const containerEl = document.getElementById('categoriesContainer');
+
+    try {
+      const response = await fetch(CSV_URL + '?t=' + Date.now());
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      
+      const text = await response.text();
+      ALL_SOURCES = parseCSV(text);
+      
+      if (ALL_SOURCES.length === 0) {
+        throw new Error('No sounds found in CSV');
+      }
+
+      SOURCES_BY_CATEGORY = organizeSounds(ALL_SOURCES);
+      
+      loadingEl.style.display = 'none';
+      renderCategories();
+      renderAll();
+      checkArchiveStatus();
+      
+    } catch (err) {
+      console.error('Failed to load sounds:', err);
+      loadingEl.innerHTML = '<div style="text-align:center; padding:40px; color:#e74c3c;">' +
+        '<div>Failed to load sounds</div>' +
+        '<div style="font-size:12px; margin-top:8px; opacity:0.7;">' + err.message + '</div>' +
+        '<button onclick="location.reload()" style="margin-top:12px; padding:8px 16px; border-radius:8px; border:1px solid #e74c3c; background:transparent; color:#e74c3c; cursor:pointer;">Retry</button>' +
+        '</div>';
+    }
+  }
 
   // LocalStorage keys
   const LS_FAV = "colorNoiseFavorites";
@@ -1956,38 +1811,23 @@
       favoritesSection.classList.add("hidden");
     }
 
-    renderSection("coreGrid", SOURCES_CORE);
-    renderSection("blendsGrid", SOURCES_BLENDS);
-    renderSection("binauralGrid", SOURCES_BINAURAL);
-    renderSection("natureGrid", SOURCES_NATURE);
-    renderSection("mechanicalGrid", SOURCES_MECHANICAL);
-
-    // Apply collapsed state
-    document.querySelectorAll(".sectionTitle[data-section]").forEach(header => {
-      const section = header.dataset.section;
-      const grid = header.nextElementSibling;
-      if (collapsedSections[section]) {
-        header.classList.add("collapsed");
-        grid.classList.add("collapsed");
-      } else {
-        header.classList.remove("collapsed");
-        grid.classList.remove("collapsed");
-      }
+    // Render each category grid dynamically
+    const orderedCats = getOrderedCategories(SOURCES_BY_CATEGORY);
+    orderedCats.forEach(category => {
+      const sectionKey = category.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      const gridEl = document.getElementById(sectionKey + 'Grid');
+      if (!gridEl) return;
+      
+      gridEl.innerHTML = '';
+      const sounds = SOURCES_BY_CATEGORY[category] || [];
+      sounds.forEach(s => gridEl.appendChild(makeTile(s, false)));
     });
 
     setActive(currentKey);
     updateLayout();
   }
 
-  // Collapse handlers
-  document.querySelectorAll(".sectionTitle[data-section]").forEach(header => {
-    header.onclick = () => {
-      const section = header.dataset.section;
-      collapsedSections[section] = !collapsedSections[section];
-      saveCollapsed();
-      renderAll();
-    };
-  });
+  // Collapse handlers are set up in renderCategories()
 
   // Favorites header and edit toggle
   const favEditBtnEl = document.getElementById("favEditBtn");
@@ -2362,12 +2202,11 @@
     // Always start neutral on reload.
     currentKey = null;
     setActive(null);
-    setNowPlaying("Select a sound below");
+    setNowPlaying("Loading sounds...");
   })();
 
-  // Initial render
+  // Initial setup (before sounds load)
   try { sessionStorage.removeItem("colorNoiseDidReloadForNormalize"); } catch {}
-  renderAll();
   applySleepTimerVisibility();
   applyMainVolumeVisibility();
 
@@ -2399,9 +2238,15 @@
   setTimeout(() => updateLayout(), 1000);
 
   // Check sound engine status (Internet Archive) — reliable media probe
-  (function checkArchiveStatus() {
+  function checkArchiveStatus() {
     const statusEl = document.getElementById("sourceStatus");
-    const testUrl = "https://archive.org/download/1-hour-brown-noise-and-flowing-water-320/1%20hour%20Brown%20Noise%20and%20Flowing%20River%20flac.mp3";
+    
+    // Use first available sound URL for testing
+    const testUrl = ALL_SOURCES[0]?.url;
+    if (!testUrl) {
+      statusEl.innerHTML = `<span class="dot down"></span>Sound engine: no sounds loaded`;
+      return;
+    }
 
     const probe = new Audio();
     probe.preload = "metadata";
@@ -2438,19 +2283,6 @@
   loadSounds().then(() => {
     setNowPlaying("Select a sound below");
   });
-
-})();
-</script>
-</body>
-</html> finish(true); }, { once: true });
-    probe.addEventListener("error", () => { clearTimeout(t); finish(false); }, { once: true });
-
-    probe.src = testUrl;
-    probe.load();
-  })();
-
-  // Keep layout correct on resize/orientation change
-  window.addEventListener("resize", () => updateLayout());
 
 })();
 </script>
