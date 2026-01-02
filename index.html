@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.2</title>
+  <title>ColorNoise v1.20.1</title>
 
   <!-- Cache control -->  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -687,6 +687,42 @@
       opacity: 0.5;
       pointer-events: none;
     }
+    /* Inline toggle + slider row */
+    .settingRowInline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-primary);
+    }
+    .settingRowInline .settingLabel {
+      flex-shrink: 0;
+    }
+    .settingRowInline .inlineControls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+    .settingRowInline .durationControl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.2s;
+    }
+    .settingRowInline .durationControl.disabled {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .settingRowInline .durationControl input[type="range"] {
+      width: 80px;
+    }
+    .settingRowInline .durationControl .settingValue {
+      min-width: 36px;
+      text-align: right;
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -699,7 +735,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
-          <span class="version">v1.2</span>
+          <span class="version">v1.20.1</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -786,33 +822,31 @@
         <!-- Playback -->
         <div class="settingsSectionTitle">Playback</div>
 
-        <div class="settingRow">
+        <div class="settingRowInline">
           <div class="settingLabel">Crossfade on track switch</div>
-          <label class="switch">
-            <input type="checkbox" id="enableCrossfade">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="settingRow">
-          <div class="settingLabel">Crossfade duration</div>
-          <div class="settingControl">
-            <input type="range" id="crossfadeSec" min="0" max="6" step="0.5">
-            <div class="settingValue" id="crossfadeSecVal"></div>
+          <div class="inlineControls">
+            <div class="durationControl disabled" id="crossfadeDurationControl">
+              <input type="range" id="crossfadeSec" min="0" max="6" step="0.5">
+              <div class="settingValue" id="crossfadeSecVal"></div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="enableCrossfade">
+              <span class="slider"></span>
+            </label>
           </div>
         </div>
 
-        <div class="settingRow">
+        <div class="settingRowInline">
           <div class="settingLabel">Fade out when sleep timer ends</div>
-          <label class="switch">
-            <input type="checkbox" id="enableFadeOut">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="settingRow">
-          <div class="settingLabel">Fade-out duration</div>
-          <div class="settingControl">
-            <input type="range" id="fadeOutSec" min="0" max="12" step="0.5">
-            <div class="settingValue" id="fadeOutSecVal"></div>
+          <div class="inlineControls">
+            <div class="durationControl disabled" id="fadeOutDurationControl">
+              <input type="range" id="fadeOutSec" min="0" max="12" step="0.5">
+              <div class="settingValue" id="fadeOutSecVal"></div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="enableFadeOut">
+              <span class="slider"></span>
+            </label>
           </div>
         </div>
 
@@ -886,7 +920,7 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
-  const ASSET_VERSION = "1.2"; // bump when publishing changes
+  const ASSET_VERSION = "1.20.1"; // bump when publishing changes
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1964,9 +1998,34 @@
     updateLayout();
   }
 
+  // Duration control elements
+  const crossfadeDurationControl = document.getElementById("crossfadeDurationControl");
+  const fadeOutDurationControl = document.getElementById("fadeOutDurationControl");
+
+  function updateCrossfadeDurationState() {
+    if (crossfadeDurationControl) {
+      if (settings.enableCrossfade) {
+        crossfadeDurationControl.classList.remove("disabled");
+      } else {
+        crossfadeDurationControl.classList.add("disabled");
+      }
+    }
+  }
+
+  function updateFadeOutDurationState() {
+    if (fadeOutDurationControl) {
+      if (settings.enableFadeOut) {
+        fadeOutDurationControl.classList.remove("disabled");
+      } else {
+        fadeOutDurationControl.classList.add("disabled");
+      }
+    }
+  }
+
   enableCrossfadeEl.onchange = () => {
     settings.enableCrossfade = enableCrossfadeEl.checked;
     saveSettings();
+    updateCrossfadeDurationState();
   };
   crossfadeSecEl.oninput = () => {
     settings.crossfadeSec = Number(crossfadeSecEl.value);
@@ -1976,12 +2035,17 @@
   enableFadeOutEl.onchange = () => {
     settings.enableFadeOut = enableFadeOutEl.checked;
     saveSettings();
+    updateFadeOutDurationState();
   };
   fadeOutSecEl.oninput = () => {
     settings.fadeOutSec = Number(fadeOutSecEl.value);
     fadeOutSecVal.textContent = fmtSec(settings.fadeOutSec);
     saveSettings();
   };
+
+  // Initialize duration control states
+  updateCrossfadeDurationState();
+  updateFadeOutDurationState();
 
   if (showMainVolumeEl) {
     showMainVolumeEl.onchange = () => {
