@@ -1231,13 +1231,13 @@
   function setMediaSession(title) {
     if (!("mediaSession" in navigator)) return;
     try {
-      const iconEl = document.querySelector('link[rel~="icon"]');
+      const iconEl = document.querySelector('link[rel="apple-touch-icon"]');
       const iconHref = iconEl ? iconEl.href : "";
       navigator.mediaSession.metadata = new MediaMetadata({
         title: title || "Color Noise",
         artist: "ColorNoise",
         album: "ColorNoise Feeds",
-        artwork: iconHref ? [{ src: iconHref }] : []
+        artwork: iconHref ? [{ src: iconHref, sizes: "180x180", type: "image/png" }] : []
       });
     } catch {}
   }
