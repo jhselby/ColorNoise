@@ -1232,7 +1232,7 @@
     if (!("mediaSession" in navigator)) return;
     try {
       const iconEl = document.querySelector('link[rel="apple-touch-icon"]');
-      const iconHref = iconEl ? iconEl.href : "";
+      const iconHref = iconEl ? iconEl.href + "?v=2" : "";
       navigator.mediaSession.metadata = new MediaMetadata({
         title: title || "Color Noise",
         artist: "ColorNoise",
