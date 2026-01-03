@@ -3,9 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.21.7</title>
+  <title>ColorNoise v1.21.8</title>
 
-  <!-- Cache control -->  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- Cache control -->
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0b0f18">
@@ -742,7 +744,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
-          <span class="version">v1.21.7</span>
+          <span class="version">v1.21.8</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -941,7 +943,7 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
-  const ASSET_VERSION = "1.21.7"; // bump when publishing changes
+  const ASSET_VERSION = "1.21.8"; // bump when publishing changes
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1340,18 +1342,30 @@
   function ensureAudioGraph() {
     if (audioCtx) {
       // Graph exists but might be disconnected from a fade-stop
-      // Make sure masterGain is connected to destination
-      try {
-        masterGain.connect(audioCtx.destination);
-      } catch (e) {
-        // Already connected, that's fine
-      }
-      // Restore gains to usable values
+      // Check if we need to restore (masterGain at 0 means we did a fade-stop)
       if (masterGain && masterGain.gain.value === 0) {
+        console.log('[GRAPH] restoring after fade-stop, clearing players first...');
+        // Clear both players BEFORE reconnecting to prevent blip from buffered audio
+        players.forEach(p => {
+          try {
+            p.pause();
+            p.currentTime = 0;
+            p.src = "";
+            p.load();
+          } catch {}
+        });
+        
+        // Now safe to reconnect and restore
+        try {
+          masterGain.connect(audioCtx.destination);
+        } catch (e) {
+          // Already connected, that's fine
+        }
         masterGain.gain.value = settings.masterVol;
-      }
-      if (gains[activeIdx] && gains[activeIdx].gain.value === 0) {
-        gains[activeIdx].gain.value = 1;
+        // Restore both crossfade gains
+        if (gains[0]) gains[0].gain.value = (0 === activeIdx) ? 1 : 0;
+        if (gains[1]) gains[1].gain.value = (1 === activeIdx) ? 1 : 0;
+        console.log('[GRAPH] restored');
       }
       return;
     }
