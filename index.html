@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.21.6</title>
+  <title>ColorNoise v1.21.7</title>
 
   <!-- Cache control -->  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -742,7 +742,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
-          <span class="version">v1.21.6</span>
+          <span class="version">v1.21.7</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -941,7 +941,7 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
-  const ASSET_VERSION = "1.21.6"; // bump when publishing changes
+  const ASSET_VERSION = "1.21.7"; // bump when publishing changes
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1338,7 +1338,23 @@
   let masterGain = null;
 
   function ensureAudioGraph() {
-    if (audioCtx) return;
+    if (audioCtx) {
+      // Graph exists but might be disconnected from a fade-stop
+      // Make sure masterGain is connected to destination
+      try {
+        masterGain.connect(audioCtx.destination);
+      } catch (e) {
+        // Already connected, that's fine
+      }
+      // Restore gains to usable values
+      if (masterGain && masterGain.gain.value === 0) {
+        masterGain.gain.value = settings.masterVol;
+      }
+      if (gains[activeIdx] && gains[activeIdx].gain.value === 0) {
+        gains[activeIdx].gain.value = 1;
+      }
+      return;
+    }
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
     // Master gain (volume)
@@ -1491,30 +1507,24 @@
       
       setTimeout(() => {
         console.log('[FADE] ramp complete, masterGain.gain.value is now:', masterGain.gain.value);
-        // Force master to zero
+        // Force all gains to zero
         masterGain.gain.value = 0;
+        if (gainNode) gainNode.gain.value = 0;
         console.log('[FADE] forced to 0, disconnecting...');
         
         // Disconnect master gain from destination to cut audio path completely
         try { masterGain.disconnect(); } catch {}
         
         console.log('[FADE] disconnected, pausing and clearing source...');
-        // Pause and clear the source to ensure no buffered audio remains
         try { 
           playerEl.pause();
           playerEl.currentTime = 0;
         } catch {}
         
-        // Wait for audio element to fully stop
-        setTimeout(() => {
-          console.log('[FADE] reconnecting and restoring...');
-          try { masterGain.connect(audioCtx.destination); } catch {}
-          masterGain.gain.value = startVol;
-          // Also restore the crossfade gain node if it was passed in
-          if (gainNode) gainNode.gain.value = 1;
-          console.log('[FADE] done');
-          resolve();
-        }, 100);
+        // DON'T reconnect or restore here - that's what causes the blip!
+        // We'll reconnect and restore gains when the next sound starts playing
+        console.log('[FADE] done - graph left disconnected until next play');
+        resolve();
       }, Math.ceil(seconds * 1000));
     });
   }
