@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.21.10</title>
+  <title>ColorNoise v1.22</title>
 
   <!-- Cache control -->
   <link rel="icon" href="favicon.ico" type="image/x-icon">
@@ -744,7 +744,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
-          <span class="version">v1.21.10</span>
+          <span class="version">v1.22</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -943,7 +943,7 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
-  const ASSET_VERSION = "1.21.10"; // bump when publishing changes
+  const ASSET_VERSION = "1.22"; // bump when publishing changes
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1345,13 +1345,12 @@
   function ensureAudioGraph() {
     if (audioCtx) {
       // Graph exists but might be disconnected from a fade-stop
-      // Just reconnect, but DON'T restore gains yet - that happens in playItem after new source is loaded
+      // Reconnect if needed, but don't restore gains yet - that happens in playItem
       if (masterGain && masterGain.gain.value === 0) {
-        console.log('[GRAPH] detected fade-stop state, reconnecting but NOT restoring gains yet');
         try {
           masterGain.connect(audioCtx.destination);
         } catch (e) {
-          // Already connected, that's fine
+          // Already connected
         }
         needsGainRestore = true;
       }
@@ -1494,38 +1493,30 @@
 
   function fadeOutAndStop(playerEl, gainNode, seconds) {
     return new Promise((resolve) => {
-      console.log('[FADE] fadeOutAndStop called, seconds:', seconds);
       if (!audioCtx || !masterGain || seconds <= 0) {
-        console.log('[FADE] early exit - no audioCtx/masterGain or seconds<=0');
         try { playerEl.pause(); } catch {}
         resolve();
         return;
       }
       
-      // Fade the MASTER gain
-      const startVol = masterGain.gain.value;
-      console.log('[FADE] starting ramp from', startVol, 'to 0 over', seconds, 'sec');
-      rampGain(masterGain, startVol, 0, seconds);
+      // Fade the master gain to zero
+      rampGain(masterGain, masterGain.gain.value, 0, seconds);
       
       setTimeout(() => {
-        console.log('[FADE] ramp complete, masterGain.gain.value is now:', masterGain.gain.value);
         // Force all gains to zero
         masterGain.gain.value = 0;
         if (gainNode) gainNode.gain.value = 0;
-        console.log('[FADE] forced to 0, disconnecting...');
         
-        // Disconnect master gain from destination to cut audio path completely
+        // Disconnect master gain from destination
         try { masterGain.disconnect(); } catch {}
         
-        console.log('[FADE] disconnected, pausing and clearing source...');
+        // Pause and clear the source
         try { 
           playerEl.pause();
           playerEl.currentTime = 0;
         } catch {}
         
-        // DON'T reconnect or restore here - that's what causes the blip!
-        // We'll reconnect and restore gains when the next sound starts playing
-        console.log('[FADE] done - graph left disconnected until next play');
+        // Don't restore here - let playItem handle it after new source loads
         resolve();
       }, Math.ceil(seconds * 1000));
     });
@@ -1566,11 +1557,8 @@
     }
 
     if (shouldFade) {
-      console.log('[STOP] using fade, duration:', fadeDuration);
       await fadeOutAndStop(p, gains[activeIdx], fadeDuration);
-      // Note: gain restoration now happens inside fadeOutAndStop after a delay
     } else {
-      console.log('[STOP] no fade, direct pause');
       try { p.pause(); } catch {}
     }
 
@@ -1664,9 +1652,8 @@
       // Wait for new source to be ready before restoring gains and playing
       const onCanPlay = () => {
         p.removeEventListener('canplay', onCanPlay);
-        console.log('[PLAY] canplay fired, now restoring gains');
         
-        // NOW restore gains - new source is definitely loaded
+        // Restore gains now that new source is loaded
         if (needsGainRestore) {
           masterGain.gain.value = settings.masterVol;
           if (gains[activeIdx]) gains[activeIdx].gain.value = 1;
@@ -1726,9 +1713,7 @@
 
     // If we need to restore from fade-stop, wait for canplay
     if (needsGainRestore) {
-      console.log('[PLAY-SWITCH] waiting for canplay before restoring masterGain');
       newP.addEventListener('canplay', () => {
-        console.log('[PLAY-SWITCH] canplay fired, restoring masterGain');
         masterGain.gain.value = settings.masterVol;
         if (!doCrossfade) {
           gains[newIdx].gain.value = 1;
