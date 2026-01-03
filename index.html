@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>ColorNoise v1.21.9</title>
+  <title>ColorNoise v1.21.10</title>
 
   <!-- Cache control -->
   <link rel="icon" href="favicon.ico" type="image/x-icon">
@@ -744,7 +744,7 @@
       <div class="headerLeft">
         <div class="logo">
           <a href="https://en.wikipedia.org/wiki/Colors_of_noise" target="_blank" rel="noopener noreferrer">Color Noise ↗</a>
-          <span class="version">v1.21.9</span>
+          <span class="version">v1.21.10</span>
         </div>
         <div class="byline">by AboveAverageJoe</div>
         <div class="sourceStatus" id="sourceStatus">
@@ -943,7 +943,7 @@
 (() => {
   // CSV URL - loads from same directory
   const CSV_URL = "sounds.csv";
-  const ASSET_VERSION = "1.21.9"; // bump when publishing changes
+  const ASSET_VERSION = "1.21.10"; // bump when publishing changes
 
   // Hardcoded category order (new categories appear alphabetically after these)
   const CATEGORY_ORDER = [
@@ -1660,20 +1660,36 @@
       p.src = "";
       p.load();
       p.src = item.url;
-      p.load();
-
-      // Restore gains NOW, after new source is loaded (old buffer is gone)
+      
+      // Wait for new source to be ready before restoring gains and playing
+      const onCanPlay = () => {
+        p.removeEventListener('canplay', onCanPlay);
+        console.log('[PLAY] canplay fired, now restoring gains');
+        
+        // NOW restore gains - new source is definitely loaded
+        if (needsGainRestore) {
+          masterGain.gain.value = settings.masterVol;
+          if (gains[activeIdx]) gains[activeIdx].gain.value = 1;
+          needsGainRestore = false;
+        }
+        
+        const prom = p.play();
+        if (prom !== undefined) {
+          prom.then(() => setNowPlaying(item.name))
+              .catch(() => setNowPlaying(item.name + " (tap ▶)"));
+        }
+      };
+      
       if (needsGainRestore) {
-        console.log('[PLAY] restoring gains after new source loaded');
-        masterGain.gain.value = settings.masterVol;
-        if (gains[activeIdx]) gains[activeIdx].gain.value = 1;
-        needsGainRestore = false;
-      }
-
-      const prom = p.play();
-      if (prom !== undefined) {
-        prom.then(() => setNowPlaying(item.name))
-            .catch(() => setNowPlaying(item.name + " (tap ▶)"));
+        p.addEventListener('canplay', onCanPlay, { once: true });
+        p.load();
+      } else {
+        p.load();
+        const prom = p.play();
+        if (prom !== undefined) {
+          prom.then(() => setNowPlaying(item.name))
+              .catch(() => setNowPlaying(item.name + " (tap ▶)"));
+        }
       }
       return;
     }
@@ -1700,21 +1716,28 @@
     newP.src = "";
     newP.load();
     newP.src = item.url;
-    newP.load();
-
-    // Restore master gain if needed (after new source loaded, before play)
-    if (needsGainRestore) {
-      console.log('[PLAY-SWITCH] restoring gains after new source loaded');
-      masterGain.gain.value = settings.masterVol;
-      needsGainRestore = false;
-    }
-
-    // Initialize gains for the new player
+    
+    // Initialize gains for the new player (keep at 0 until ready if we need restore)
     if (doCrossfade) {
       gains[newIdx].gain.value = 0;
     } else {
-      gains[newIdx].gain.value = 1;
+      gains[newIdx].gain.value = needsGainRestore ? 0 : 1;
     }
+
+    // If we need to restore from fade-stop, wait for canplay
+    if (needsGainRestore) {
+      console.log('[PLAY-SWITCH] waiting for canplay before restoring masterGain');
+      newP.addEventListener('canplay', () => {
+        console.log('[PLAY-SWITCH] canplay fired, restoring masterGain');
+        masterGain.gain.value = settings.masterVol;
+        if (!doCrossfade) {
+          gains[newIdx].gain.value = 1;
+        }
+      }, { once: true });
+      needsGainRestore = false;
+    }
+    
+    newP.load();
 
     // Try to start the new track right away (within the click gesture)
     let newStarted = false;
